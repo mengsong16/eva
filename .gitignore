@@ -1,0 +1,6 @@
+eva.egg-info
+.DS_Store
+.history
+.vscode
+data
+wandb
