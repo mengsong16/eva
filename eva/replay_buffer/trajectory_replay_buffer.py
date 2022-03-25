@@ -8,10 +8,9 @@ class PrioritizedTrajectoryReplayBuffer(object):
     set to be episode's total reward. Note that unlike usual RL buffers,
     we store entire 'trajectories' together, instead of just transitions.
     """
-    def __init__(self, size, seed=4076):
+    def __init__(self, size):
         self.size = size
         self.buffer = [] # initialized as a regular list; use heapq functions
-        self.rg = np.random.RandomState(seed)
 
     def __getitem__(self, key):
         return self.buffer[key]
@@ -19,7 +18,8 @@ class PrioritizedTrajectoryReplayBuffer(object):
     def __len__(self):
         return len(self.buffer)
 
-    # add one episode
+    # add one episode in form of [s,a,r,s']
+    # Note: s, s' are not augmented, this allows goal changes as HER
     def add_episode(self, S, A, R, S_):
         """ all inputs are numpy arrays; num_rows = timesteps
         S  : states
@@ -54,3 +54,6 @@ class PrioritizedTrajectoryReplayBuffer(object):
         sampled_items = random.choices(self.buffer, k=K)
         episodes = [x[1] for x in sampled_items] # buffer has (-reward, episode)
         return episodes
+
+    def all_episodes(self):
+        return self.buffer    

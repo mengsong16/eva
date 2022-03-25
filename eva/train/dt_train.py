@@ -335,7 +335,7 @@ def experiment(
     # train for max_iters iterations
     # each iteration includes num_steps_per_iter steps
     for iter in range(variant['max_iters']):
-        outputs = trainer.train_iteration(num_steps=variant['num_steps_per_iter'], iter_num=iter+1, print_logs=True)
+        outputs = trainer.train_one_iteration(num_steps=variant['num_steps_per_iter'], iter_num=iter+1, print_logs=True)
         if log_to_wandb:
             wandb.log(outputs)
 

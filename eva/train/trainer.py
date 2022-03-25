@@ -19,7 +19,7 @@ class Trainer:
         self.start_time = time.time()
 
     # train for one iteration
-    def train_iteration(self, num_steps, iter_num=0, print_logs=False):
+    def train_one_iteration(self, num_steps, iter_num=0, print_logs=False):
 
         train_losses = []
         logs = dict()

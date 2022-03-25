@@ -244,7 +244,7 @@ class TanhNormal(torch.distributions.Distribution):
         """
         return self._normal.entropy()
 
-    # gradients only flow through x, not clip in x+clip
+    # gradients flow through original x, not clipped part x+clip
     @staticmethod
     def _clip_but_pass_gradient(x, lower=0., upper=1.):
         """Clipping function that allows for gradients to flow through.

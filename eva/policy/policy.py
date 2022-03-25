@@ -4,6 +4,14 @@ import torch.nn as nn
 from gym import spaces
 from eva.policy.tanh_normal import TanhNormal
 
+class RandomPolicy():
+    def __init__(self, env):
+        self.env = env
+
+    # return a single action
+    def get_actions(self, aug_states=None):
+        action = self.env.action_space.sample()
+        return action   
 
 # for supervise learning
 class Policy(nn.Module):
@@ -62,11 +70,11 @@ class Policy(nn.Module):
     def scale_actions(self, actions):
         return actions * self.action_scale + self.action_center
 
-    # features: [batch_size, state_dim + command_dim]
+    # aug_states: [batch_size, state_dim + command_dim]
     # return [batch_size, 1] distributions
     # allow backprop
-    def get_distributions(self, features):
-        mlp_output = self._mlp_module(features)
+    def get_distributions(self, aug_states):
+        mlp_output = self._mlp_module(aug_states)
 
         # discrete distribution
         if self.discrete_action == True:
@@ -82,16 +90,16 @@ class Policy(nn.Module):
     
     # actions: [batch_size, action_dim] numpy array
     # allow backprop
-    def sample_actions(self, features):
-        dists = self.get_distributions(features) 
+    def sample_actions(self, aug_states):
+        dists = self.get_distributions(aug_states) 
         # Use reparametrization trick to pass gradients
         actions = dists.rsample()
         
         return actions
 
     # allow backprop
-    def get_deterministic_actions(self, features):
-        mlp_output = self._mlp_module(features)
+    def get_deterministic_actions(self, aug_states):
+        mlp_output = self._mlp_module(aug_states)
 
         # discrete action
         if self.discrete_action == True:
@@ -104,19 +112,28 @@ class Policy(nn.Module):
     
     
     # for training   
-    # features: [batch_size, state_dim + command_dim]
+    # aug_states: [batch_size, state_dim + command_dim]
     # return actions: [batch_size, action_dim] tensor 
-    def forward(self, features):
+    def forward(self, aug_states):
+        # ensure aug_states are tensors
+        aug_states = torch.tensor(aug_states, dtype=torch.float)
+
         if self.deterministic:
-            return self.get_deterministic_actions(features)
+            return self.get_deterministic_actions(aug_states)
         else:
-            return self.sample_actions(features)    
+            return self.sample_actions(aug_states)    
     
     # for evaluation
-    # features: [batch_size, state_dim + command_dim]
+    # aug_states: [batch_size, state_dim + command_dim]
     # return actions: [batch_size, action_dim] numpy array
-    def get_actions(self, features):
+    def get_actions(self, aug_states):
         with torch.no_grad():
-            actions = self.forward(features)
+            actions = self.forward(aug_states)
         
             return actions.cpu().numpy()
+    
+    # get log probability of given actions
+    # the probability distributions are calculated based on aug_states
+    def get_log_probs(self, aug_states, given_actions):
+        dists = self.get_distributions(aug_states)
+        return dists.log_prob(given_actions)
