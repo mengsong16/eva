@@ -7,15 +7,15 @@ import numpy as np
 from tqdm.notebook import tqdm
 
 # state is a numpy array
-# command is a numpy array
-def augment_state(state, command):
-	""" Appends command to the original state vector.
+# target is a numpy array
+def augment_state(state, target):
+	""" Appends target to the original state vector.
 	"""
 	
-	aug_state = np.append(state, command)
+	aug_state = np.append(state, target)
 	return aug_state
 
-# collect one episode for training
+# collect one episode for training (exploration)
 def collect_one_episode(env, agent, replay_buffer, sparse_reward, teacher=None):
 	episode = {
 			'states': [],
@@ -29,15 +29,16 @@ def collect_one_episode(env, agent, replay_buffer, sparse_reward, teacher=None):
 	state = env.reset()
 	done = False
 
+	# teacher generate episode target
 	if teacher is not None:
-		teacher.reset_command()
+		teacher.generate_episode_target()
 	
 	while not done:
 		episode['states'].append(state)
-		# augment state with command and pass it to the agent
+		# augment state with target and pass it to the agent
 		if teacher is not None:
-			command = teacher.generate_command()
-			aug_state = augment_state(state, command)
+			target = teacher.get_current_step_target()
+			aug_state = augment_state(state, target)
 			action = agent.get_actions(aug_state)
 		else:    
 			action = agent.get_actions(state)
@@ -46,17 +47,25 @@ def collect_one_episode(env, agent, replay_buffer, sparse_reward, teacher=None):
 		episode_reward += reward
 		episode['actions'].append(action)
 		episode['next_states'].append(state)
+		# get actual reward
 		if not done: 
 			if sparse_reward:
-				episode['rewards'].append(0)
+				actual_reward = 0
 			else:
-				episode['rewards'].append(reward)  
+				actual_reward = reward  
 		else:  
 			if sparse_reward:        
-				episode['rewards'].append(episode_reward)    # finally add total episode reward
+				actual_reward = episode_reward    # finally add total episode reward
 			else:
-				episode['rewards'].append(reward)
+				actual_reward = reward
+		
+		episode['rewards'].append(actual_reward)
+
+		if teacher is not None:
+			teacher.generate_next_step_target(actual_reward)		
 	
+		return episode_reward
+
 	# add episode data to the replay buffer
 	replay_buffer.add_episode(
 		np.array(episode['states'], dtype=np.float),

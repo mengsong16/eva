@@ -14,17 +14,22 @@ replay_buffer_size: 300   # max size of the replay buffer (in episodes)
 deterministic_policy: false
 hidden_size: 1024
 
-# command
-command_dim: 2
-return_scale: 0.01  # scaling factor for desired horizon input (reward)
-horizon_scale: 0.01  # scaling factor for desired horizon input (steps)
+# teacher
+algorithm_name: "udrl"
+target_dim: 2
+target_type: ["return", "horizon"]
+relative_target: true
+num_top_episodes: 25    # number of top episodes selected from the replay buffer 
+min_target_horizon: 200 # lower bound of target horizon
+return_scale: 0.01  # scaling factor for desired return input
+horizon_scale: 0.01  # scaling factor for desired horizon input
+
 
 # train
 loss_type: "log_prob" # "mse"
 batch_size: 512   # batch size per update
-learning_rate: 1e-3  # lr for ADAM optimizer
-num_iterations: 1000
+learning_rate: 1e-3  # learning rate for ADAM optimizer
+num_train_iterations: 1000
 num_updates_per_iter: 100   # number of gradient-based updates per iteration
-num_episodes_per_iter: 10    # number of episodes generated per iteration
-last_few: 25    # number of episodes from the end of the replay buffer 
-                              # used for sampling exploratory commands
+num_train_episodes_per_iter: 5 # number of episodes used for training per iteration
+num_new_episodes_per_iter: 10    # number of new episodes generated per iteration

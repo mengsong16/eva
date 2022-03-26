@@ -35,7 +35,7 @@ class EVATrainer:
 
         self.agent = Policy(state_dim=self.env.observation_space.shape[0], 
                             action_space=self.env.action_space, 
-                            command_dim=int(self.config.get("command_dim")),
+                            target_dim=int(self.config.get("target_dim")),
                             deterministic=self.config.get("deterministic_policy"),
                             hidden_size=int(self.config.get("hidden_size")))
 
@@ -44,9 +44,11 @@ class EVATrainer:
         self.teacher = UDRL()
 
         self.init_wandb()
+
     
     def init_replay_buffer(self):
-        playing_step = 0
+        # initialize data collection counter
+        self.collected_episodes = 0
 
         self.replay_buffer = PrioritizedTrajectoryReplayBuffer(
             size=int(self.config.get("replay_buffer_size")),
@@ -56,22 +58,32 @@ class EVATrainer:
         if self.config.get("warmup_with_random_trajectories"):
             num_episode = int(self.config.get("num_warmup_episodes"))
             for _ in tqdm(range(num_episode)):
-                collect_one_episode(self.env, self.agent, 
+                episode_reward = collect_one_episode(self.env, self.agent, 
                         self.replay_buffer, self.sparse_reward, 
                         teacher=None)
                 
-                playing_step += 1
-                experiment.log_metric("episode_reward", episode_reward, step=playing_step)
+                # step counter and log 
+                self.collected_episodes += 1
+                wandb.log({"collected_episode_reward": episode_reward}, step=self.collected_episodes)
 
         
     def init_wandb(self):
         project_name = 'eva'
+
+        env_name = str(self.config.get("env_id"))
+        if self.sparse_reward:
+            env_name = env_name + "-sparse"
+        algorithm_name = self.config.get("algorithm_name")
+        group_name = f'{algorithm_name}-{env_name}'
+
+        # group_name - 6 digit random number
+        experiment_name = f'{group_name}-{random.randint(int(1e5), int(1e6) - 1)}'
         # initialize this run under project xxx
         wandb.init(
-            name=exp_prefix,
-            group=group_name,
-            project=project_name,
-            config=variant,
+            name=experiment_name.lower(),
+            group=group_name.lower(),
+            project=project_name.lower(),
+            config=self.config,
             dir=os.path.join(root_path)
         )
     
@@ -80,7 +92,7 @@ class EVATrainer:
         """
 
         if self.loss_type == "mse":
-            predicted_actions = self.agent(aug_states)
+            predicted_actions = self.agent.forward(aug_states)
             return torch.mean((ground_truth_actions - predicted_actions)**2)
         elif self.loss_type == "log_prob":
             log_probs = self.agent.get_log_probs(aug_states, ground_truth_actions)
@@ -97,14 +109,15 @@ class EVATrainer:
         # this runs for num_updates_per_iter rounds
         for behavior_batch in train_dataset_loader: 
             self.agent.zero_grad()
-            aug_states = behavior_batch['features']
-            ground_truth_actions = behavior_batch['label']
+            aug_states = behavior_batch['augmented_state']
+            ground_truth_actions = behavior_batch['ground_truth_action']
             loss = self.compute_loss(aug_states, ground_truth_actions)
             loss.backward()
             self.optimizer.step()
 
-            training_step += 1
-            experiment.log_metric("batch_loss", loss.cpu().detach(), step=training_step)
+            # step counter and log
+            self.training_step += 1
+            wandb.log({"batch_loss": loss.cpu().detach()}, step=self.training_step)
 
     def train(self):
         # set loss function and optimizer
@@ -112,30 +125,35 @@ class EVATrainer:
         self.optimizer = torch.optim.Adam(self.agent.parameters(), 
             lr=float(self.config.get("learning_rate")))
         
-        # start training
-        num_iterations = int(self.config.get("num_iterations"))
-        for _ in range(num_iterations):
-            # train policy
+        # initialize training step counter
+        self.training_step = 0
+
+        # train for N iterations
+        num_train_iterations = int(self.config.get("num_train_iterations"))
+        for _ in range(num_train_iterations):
+            # teacher generate training set
             train_dataset_loader = self.teacher.construct_train_dataset()
+
+            # train agent
             self.train_one_iteration(train_dataset_loader)
             
-
-            # teacher generate target commands
-
-            experiment.log_metric("tgt_reward_mean", tgt_reward_mean, step=playing_step)
+            # teacher generate exploratory targets for current iteration
+            self.teacher.generate_iteration_target()
             
-            
-            # generate new episode using latest policy network and generated commands
-            num_episode_generate = int(self.config.get("num_episodes_per_iter"))
+            # agent generate new episodes using latest policy network and exploratory targets
+            num_episode_generate = int(self.config.get("num_new_episodes_per_iter"))
             for _ in range(num_episode_generate):
-                # collect episode
-                collect_one_episode(self.env, self.agent, 
+                # agent collect one episode
+                episode_reward = collect_one_episode(self.env, self.agent, 
                         self.replay_buffer, self.sparse_reward, 
                         self.teacher)
 
-                playing_step += 1
-                experiment.log_metric("episode_reward", episode_reward, step=playing_step)
-    
+                # step counter and log
+                self.collected_episodes += 1
+                wandb.log({"collected_episode_reward": episode_reward}, step=self.collected_episodes)
+                wandb.log({"target_horizon": target_horizon}, step=self.collected_episodes)
+                wandb.log({"target_reward": target_reward}, step=self.collected_episodes)
+                
         self.env.close()
-        experiment.end()
+        
         print("Training done.")

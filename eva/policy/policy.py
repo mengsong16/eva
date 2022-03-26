@@ -16,12 +16,12 @@ class RandomPolicy():
 # for supervise learning
 class Policy(nn.Module):
 
-    """ Policy network takes state and target commands as input
+    """ Policy network takes state and target targets as input
 	and returns probability distribution over all actions.
 	"""
 
     # the same hidden size is used for all layers
-    def __init__(self, state_dim, action_space, command_dim=0, deterministic=False, hidden_size=1024, hidden_layer=2, dropout=0):
+    def __init__(self, state_dim, action_space, target_dim=0, deterministic=False, hidden_size=1024, hidden_layer=2, dropout=0):
         super(Policy, self).__init__()
 
         if isinstance(action_space, spaces.Box):
@@ -41,7 +41,7 @@ class Policy(nn.Module):
         assert hidden_layer >= 1, "Error: Must have at least one hidden layers"
         # hidden layer 1 (input --> hidden): linear+relu+dropout
         self.mlp_module = [
-            nn.Linear(state_dim+command_dim, hidden_size),
+            nn.Linear(state_dim+target_dim, hidden_size),
             nn.ReLU()]
 
         if dropout > 0:    
@@ -70,7 +70,7 @@ class Policy(nn.Module):
     def scale_actions(self, actions):
         return actions * self.action_scale + self.action_center
 
-    # aug_states: [batch_size, state_dim + command_dim]
+    # aug_states: [batch_size, state_dim + target_dim]
     # return [batch_size, 1] distributions
     # allow backprop
     def get_distributions(self, aug_states):
@@ -112,7 +112,7 @@ class Policy(nn.Module):
     
     
     # for training   
-    # aug_states: [batch_size, state_dim + command_dim]
+    # aug_states: [batch_size, state_dim + target_dim]
     # return actions: [batch_size, action_dim] tensor 
     def forward(self, aug_states):
         # ensure aug_states are tensors
@@ -124,7 +124,7 @@ class Policy(nn.Module):
             return self.sample_actions(aug_states)    
     
     # for evaluation
-    # aug_states: [batch_size, state_dim + command_dim]
+    # aug_states: [batch_size, state_dim + target_dim]
     # return actions: [batch_size, action_dim] numpy array
     def get_actions(self, aug_states):
         with torch.no_grad():
