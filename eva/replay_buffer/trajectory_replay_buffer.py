@@ -36,6 +36,7 @@ class PrioritizedTrajectoryReplayBuffer(object):
             item = (episode_reward, episode) # -1 for desc ordering
             if len(self.buffer) < self.size:
                 heapq.heappush(self.buffer, item) 
+            # when buffer is full, always remove the episodes with smallest return    
             else:
                 _ = heapq.heappushpop(self.buffer, item) # ignore the popped obj
     

@@ -1,5 +1,5 @@
 import gym
-import d4rl # Import required to register environments
+import eva.test.test_d4rl as test_d4rl # Import required to register environments
 
 # Create the environment
 env = gym.make('maze2d-umaze-v1')
@@ -15,4 +15,4 @@ print(dataset['observations']) # An N x dim_observation Numpy array of observati
 
 # Alternatively, use d4rl.qlearning_dataset which
 # also adds next_observations.
-dataset = d4rl.qlearning_dataset(env)
+dataset = test_d4rl.qlearning_dataset(env)

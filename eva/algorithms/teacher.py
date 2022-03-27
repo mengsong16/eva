@@ -23,7 +23,6 @@ class UDRL(Teacher):
         self.return_scale = float(self.config.get("return_scale"))
         self.horizon_scale = float(self.config.get("horizon_scale"))
 
-    
     def scale_target(self, tgt_horizon, tgt_return):
         scaled_tgt_horizon = tgt_horizon * self.horizon_scale
         scaled_tgt_return *= tgt_return * self.return_scale
@@ -40,7 +39,7 @@ class UDRL(Teacher):
         tgt_horizon = int(np.mean([x[0].shape[0] for x in top_episodes]))
         self.tgt_horizon = min(tgt_horizon, int(self.config.get("min_target_horizon")))
         
-        # target return is a Gaussian distribution calculated from top N episodes
+        # mean and std of target return of top N episodes
         self.tgt_return_std = np.std([np.sum(x[2]) for x in top_episodes])
         self.tgt_return_mean = np.mean([np.sum(x[2]) for x in top_episodes])
 
@@ -48,6 +47,8 @@ class UDRL(Teacher):
     # generate target for current episode when collecting new data
     # for exploration
     def generate_episode_target(self): 
+        # sample target return from [mean, mean+std)
+        # random_sample: sample from [0.0, 1.0)
         episode_tgt_return = np.random.random_sample() * self.tgt_return_std + self.tgt_return_mean
         # round to interger.0
         self.episode_tgt_return = round(episode_tgt_return, 0)
@@ -96,7 +97,7 @@ class UDRL(Teacher):
     # for student learning
     # R: reward array of this episode
     def get_achieved_target(self, episode_len, start_index, R):
-        # achieved target is the end of the trajectory
+        # achieved target is the final state of the trajectory
         tgt_horizon = (episode_len - start_index - 1)
         tgt_return = np.sum(R[start_index:])
         tgt_horizon, tgt_return = self.scale_target(tgt_horizon, tgt_return)

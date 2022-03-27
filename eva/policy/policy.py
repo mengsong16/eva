@@ -9,7 +9,8 @@ class RandomPolicy():
         self.env = env
 
     # return a single action
-    def get_actions(self, aug_states=None):
+    def get_actions(self):
+        # uniform random policy
         action = self.env.action_space.sample()
         return action   
 
@@ -24,12 +25,12 @@ class Policy(nn.Module):
     def __init__(self, state_dim, action_space, target_dim=0, deterministic=False, hidden_size=1024, hidden_layer=2, dropout=0):
         super(Policy, self).__init__()
 
-        if isinstance(action_space, spaces.Box):
-            self.act_dim = action_space.n
-            self.discrete_action = True
-        else:
+        if isinstance(action_space, spaces.Box): # continuous action space
             self.act_dim = int(np.prod(action_space.shape))
             self.discrete_action = False
+        else:
+            self.act_dim = action_space.n
+            self.discrete_action = True
 
         self.deterministic = deterministic
 
