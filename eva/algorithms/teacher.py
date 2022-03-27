@@ -20,7 +20,6 @@ class UDRL(Teacher):
     def __init__(self, config, replay_buffer):
         super().__init__(config, replay_buffer)
 
-        self.relative_target = self.config.get("relative_target")
         self.return_scale = float(self.config.get("return_scale"))
         self.horizon_scale = float(self.config.get("horizon_scale"))
 
@@ -49,29 +48,33 @@ class UDRL(Teacher):
     # generate target for current episode when collecting new data
     # for exploration
     def generate_episode_target(self): 
-        episode_tgt_reward = np.random.random_sample() * self.tgt_return_std + self.tgt_return_mean
+        episode_tgt_return = np.random.random_sample() * self.tgt_return_std + self.tgt_return_mean
         # round to interger.0
-        self.episode_tgt_reward = round(episode_tgt_reward, 0)
+        self.episode_tgt_return = round(episode_tgt_return, 0)
 
         self.episode_tgt_horizon = self.tgt_horizon 
 
-        self.step_tgt_reward = self.episode_tgt_reward
+        self.step_tgt_return = self.episode_tgt_return
         self.step_tgt_horizon = self.episode_tgt_horizon
-            
 
+    def get_episode_target_horizon(self):
+        return self.episode_tgt_horizon
+
+    def get_episode_target_reward(self):
+        return self.episode_tgt_return      
+            
     # generate target for next state when collecting new data
     # for exploration
     def generate_next_step_target(self, reward):
-        if self.relative_target:
-            self.step_tgt_horizon = max(1, self.step_tgt_horizon-1)
-            self.step_tgt_reward -= reward  
+        self.step_tgt_horizon = max(1, self.step_tgt_horizon-1)
+        self.step_tgt_return -= reward  
     
     # for exploration
     def get_current_step_target(self):
-        self.step_tgt_horizon, self.step_tgt_reward = self.scale_target(
-            self.step_tgt_horizon, self.step_tgt_reward)
+        self.step_tgt_horizon, self.step_tgt_return = self.scale_target(
+            self.step_tgt_horizon, self.step_tgt_return)
 
-        return [self.step_tgt_horizon, self.step_tgt_reward]    
+        return [self.step_tgt_horizon, self.step_tgt_return]    
 
     # for student learning
     def construct_train_dataset(self):
@@ -89,9 +92,11 @@ class UDRL(Teacher):
 
         return train_dataset_loader  
     
-    # get achieved target, could be HER or other methods
+    # get achieved target, could relable like HER or use other strategies
     # for student learning
+    # R: reward array of this episode
     def get_achieved_target(self, episode_len, start_index, R):
+        # achieved target is the end of the trajectory
         tgt_horizon = (episode_len - start_index - 1)
         tgt_return = np.sum(R[start_index:])
         tgt_horizon, tgt_return = self.scale_target(tgt_horizon, tgt_return)

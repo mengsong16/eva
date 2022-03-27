@@ -29,9 +29,6 @@ def collect_one_episode(env, agent, replay_buffer, sparse_reward, teacher=None):
 	state = env.reset()
 	done = False
 
-	# teacher generate episode target
-	if teacher is not None:
-		teacher.generate_episode_target()
 	
 	while not done:
 		episode['states'].append(state)

@@ -18,7 +18,6 @@ hidden_size: 1024
 algorithm_name: "udrl"
 target_dim: 2
 target_type: ["return", "horizon"]
-relative_target: true
 num_top_episodes: 25    # number of top episodes selected from the replay buffer 
 min_target_horizon: 200 # lower bound of target horizon
 return_scale: 0.01  # scaling factor for desired return input

@@ -58,13 +58,13 @@ class EVATrainer:
         if self.config.get("warmup_with_random_trajectories"):
             num_episode = int(self.config.get("num_warmup_episodes"))
             for _ in tqdm(range(num_episode)):
-                episode_reward = collect_one_episode(self.env, self.agent, 
+                episode_return = collect_one_episode(self.env, self.agent, 
                         self.replay_buffer, self.sparse_reward, 
                         teacher=None)
                 
                 # step counter and log 
                 self.collected_episodes += 1
-                wandb.log({"collected_episode_reward": episode_reward}, step=self.collected_episodes)
+                wandb.log({"achieved_episode_return": episode_return}, step=self.collected_episodes)
 
         
     def init_wandb(self):
@@ -124,6 +124,9 @@ class EVATrainer:
         self.loss_type = self.config.get("loss_type")
         self.optimizer = torch.optim.Adam(self.agent.parameters(), 
             lr=float(self.config.get("learning_rate")))
+
+        # get targe type
+        target_type = list(self.config.get("target_type"))    
         
         # initialize training step counter
         self.training_step = 0
@@ -143,16 +146,21 @@ class EVATrainer:
             # agent generate new episodes using latest policy network and exploratory targets
             num_episode_generate = int(self.config.get("num_new_episodes_per_iter"))
             for _ in range(num_episode_generate):
+                # teacher generate episode target
+                self.teacher.generate_episode_target()
                 # agent collect one episode
-                episode_reward = collect_one_episode(self.env, self.agent, 
+                episode_return = collect_one_episode(self.env, self.agent, 
                         self.replay_buffer, self.sparse_reward, 
                         self.teacher)
 
                 # step counter and log
                 self.collected_episodes += 1
-                wandb.log({"collected_episode_reward": episode_reward}, step=self.collected_episodes)
-                wandb.log({"target_horizon": target_horizon}, step=self.collected_episodes)
-                wandb.log({"target_reward": target_reward}, step=self.collected_episodes)
+                wandb.log({"achieved_episode_return": episode_return}, step=self.collected_episodes)
+                
+                if "horizon" in target_type:
+                    wandb.log({"target_episode_horizon": self.teacher.get_episode_target_horizon()}, step=self.collected_episodes)
+                if "target" in target_type:
+                    wandb.log({"target_episode_return": self.teacher.get_episode_target_return()}, step=self.collected_episodes)
                 
         self.env.close()
         
