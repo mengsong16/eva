@@ -102,28 +102,15 @@ class EVATrainer:
             # predicted_actions: discrete: [B], continuous: [B,action_dim]
             predicted_actions = self.agent.forward(aug_states)
 
-            #print("------------------------")
-            # if ground_truth_actions.dim() < 2:
-            #     ground_truth_actions = torch.unsqueeze(ground_truth_actions,1)
-            #print(predicted_actions.shape)
-            
-            #print(ground_truth_actions.shape)
-
-           # exit()
             predicted_actions = predicted_actions.float()
-            #print(predicted_actions.dtype)
-            #print(ground_truth_actions.dtype)
-            #predicted_actions.requires_grad = True
+        
             #assert predicted_actions.requires_grad == True and ground_truth_actions.requires_grad == False
             
-            #print(torch.mean((ground_truth_actions - predicted_actions)**2))
-            #exit()
             return torch.mean((ground_truth_actions - predicted_actions)**2)
         elif self.loss_type == "log_prob":
             # log_probs: [B] for both discrete or continuous actions
             log_probs = self.agent.get_log_probs(aug_states, ground_truth_actions)
-            #print(log_probs.size())
-            #exit()
+            
             return -torch.mean(log_probs)
         else:
             print("Error: undefined loss type: %s"%(self.loss_type))
@@ -139,8 +126,7 @@ class EVATrainer:
             self.agent.zero_grad()
             aug_states = behavior_batch['augmented_state']
             ground_truth_actions = behavior_batch['ground_truth_action']
-            #print(aug_states.shape)
-            #print(ground_truth_actions.shape)
+
             # aug_states: [B,aug_state_dim]
             # ground_truth_actions: discrete: [B], continuous: [B,action_dim]
             loss = self.compute_loss(aug_states, ground_truth_actions)

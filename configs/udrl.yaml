@@ -1,7 +1,7 @@
 # env
 #env_id: "LunarLander-v2"
 env_id: "Swimmer-v2"
-#sparse_reward: true
+sparse_reward: true
 
 # seed
 seed: 4076

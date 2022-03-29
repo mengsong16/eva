@@ -41,16 +41,10 @@ class BehaviorDataset(TorchDataset):
         # construct a sample: (aug_state, gt_action)
         aug_state = augment_state(S[start_index,:], target)
 
-        #print(aug_state.shape)
-
-
         if aug_state.ndim > 1:
             aug_state = np.squeeze(aug_state, axis=0)
         
         # ground truth action
-        #print(A.shape)
-        #exit()
-
         if A.ndim == 1:  # discrete action
             gt_action = A[start_index]
         else:  # continuous action
@@ -58,16 +52,6 @@ class BehaviorDataset(TorchDataset):
             if gt_action.ndim > 1:
                 gt_action = np.squeeze(gt_action, axis=0)
 
-
-        #print(gt_action.shape)    
-        
-        #print(aug_state.shape)
-        #print(gt_action.shape)
-        #exit()
-        # print(torch.tensor(aug_state, dtype=torch.float).size())
-        # print(torch.tensor(gt_action, dtype=torch.float))
-        # exit()
-               
         # convert to torch tensor
         # aug_state: (state_dim,)
         # gt_action: (action_dim,)

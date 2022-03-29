@@ -22,7 +22,7 @@ class RandomPolicy():
         action = self.env.action_space.sample()
         if self.discrete_action == False:
             action = np.expand_dims(action, axis=0)
-        #print(action.shape)
+
         return action   
 
 # for supervise learning
@@ -90,6 +90,7 @@ class Policy(nn.Module):
         if not torch.is_tensor(x):
             x = torch.from_numpy(x).float()
         return x
+    
     # aug_states: [batch_size, state_dim + target_dim]
     # return [batch_size, 1] distributions
     # allow backprop
@@ -98,8 +99,6 @@ class Policy(nn.Module):
         aug_states = self.from_numpy_to_tensor(aug_states)
 
         mlp_output = self.mlp_module(aug_states)
-
-        #print(self.action_head(mlp_output).size())
 
         # discrete distribution
         if self.discrete_action == True:
@@ -138,11 +137,7 @@ class Policy(nn.Module):
         # discrete action
         # return [B]
         if self.discrete_action == True:
-            #print(aug_states.size())
             probs = self.softmax(self.action_head(mlp_output))
-            #print(self.action_head(mlp_output).size())
-            #print(probs.size())
-            #exit()
             # argmax is not differentiable, so its output's requires_grad = False
             return torch.argmax(probs, dim=1)
         # continuous action
@@ -179,15 +174,10 @@ class Policy(nn.Module):
     def get_log_probs(self, aug_states, given_actions):
         # dists: [B]
         dists = self.get_distributions(aug_states)
-        #print(aug_states.shape)
-        #print(given_actions.shape)
-        #print(dists)
-
-        #exit()
         
         return dists.log_prob(given_actions)
 
-# input and output have the same shape
+# input and output of softmax have the same shape
 def test_softmax():
     m = nn.Softmax(dim=1)
     input = torch.randn(2, 3)
