@@ -31,6 +31,7 @@ class PrioritizedTrajectoryReplayBuffer(object):
         # no discounting
         episode_reward = np.sum(R)
         # heapq is a min-heap
+
         if S.shape[0] > 1: # ignore episodes that has only one step
             # each item in the heap has form (return, (S,A,R,S_))
             item = (episode_reward, episode) # -1 for desc ordering
@@ -52,6 +53,10 @@ class PrioritizedTrajectoryReplayBuffer(object):
         """ Returns random K episodes.
         Output: [(state_array, action_array, reward_array, next_state_array), ... ]
         """
+        if self.__len__() < K:
+            print("Error: # episodes to sample < # of episodes in the replay buffer: %d < %d"%(self.__len__(), K))
+            exit()
+        # no repeat sample
         sampled_items = random.choices(self.buffer, k=K)
         episodes = [x[1] for x in sampled_items] # buffer has (-reward, episode)
         return episodes

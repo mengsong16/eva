@@ -6,13 +6,21 @@ from torch.utils.data import DataLoader as TorchDataLoader
 import numpy as np
 from tqdm.notebook import tqdm
 
-# state is a numpy array
-# target is a numpy array
+# state is a numpy array: [B, state_dim]
+# target is a numpy array: [B, target_dim]
+# aug_state is a numpy array: [B, state_dim+target_dim]
 def augment_state(state, target):
 	""" Appends target to the original state vector.
 	"""
+	if state.ndim < 2:
+		state = np.expand_dims(state, axis=0)
+	if target.ndim < 2:
+		target = np.expand_dims(target, axis=0)
+
+	assert state.shape[0] == target.shape[0], "state and condtion should have the same shape in dimension 0"
 	
-	aug_state = np.append(state, target)
+	aug_state = np.concatenate((state, target), axis=1)
+	
 	return aug_state
 
 # collect one episode for training (exploration)
@@ -29,18 +37,22 @@ def collect_one_episode(env, agent, replay_buffer, sparse_reward, teacher=None):
 	state = env.reset()
 	done = False
 
-	
 	while not done:
 		episode['states'].append(state)
 		# augment state with target and pass it to the agent
 		if teacher is not None:
 			target = teacher.get_current_step_target()
 			aug_state = augment_state(state, target)
+			
 			action = agent.get_actions(aug_state)
 		else:    
 			action = agent.get_actions(state)
-		
+
+		if isinstance(action, np.ndarray) and agent.discrete_action:
+			action = action[0]
+
 		state, reward, done, _ = env.step(action)
+
 		episode_reward += reward
 		episode['actions'].append(action)
 		episode['next_states'].append(state)
@@ -61,15 +73,16 @@ def collect_one_episode(env, agent, replay_buffer, sparse_reward, teacher=None):
 		if teacher is not None:
 			teacher.generate_next_step_target(actual_reward)		
 	
-		return episode_reward
-
 	# add episode data to the replay buffer
 	replay_buffer.add_episode(
 		np.array(episode['states'], dtype=np.float),
-		np.array(episode['actions'], dtype=np.int),
+		np.array(episode['actions'], dtype=np.float),
 		np.array(episode['rewards'], dtype=np.float),
 		np.array(episode['next_states'], dtype=np.float),
 	)
+
+	return episode_reward
+	
 
 def seed_env(env: gym.Env, seed: int) -> None:
     """Set the random seed of the environment."""

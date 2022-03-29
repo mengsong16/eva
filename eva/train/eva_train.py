@@ -17,7 +17,7 @@ import os
 
 
 class EVATrainer:
-    def __init__(self, config_filename="urdl.yaml"):
+    def __init__(self, config_filename="udrl.yaml"):
 
         assert config_filename is not None, "needs config file to initialize trainer"
         config_file = os.path.join(config_path, config_filename)
@@ -26,6 +26,8 @@ class EVATrainer:
         self.seed = int(self.config.get("seed"))
 
         self.env = gym.make(self.config.get("env_id")) 
+
+        self.log_to_wandb = self.config.get("log_to_wandb")
         
         # seed everything
         seed_env(self.env, self.seed)
@@ -39,11 +41,14 @@ class EVATrainer:
                             deterministic=self.config.get("deterministic_policy"),
                             hidden_size=int(self.config.get("hidden_size")))
 
+        # init wandb
+        if self.log_to_wandb:
+            self.init_wandb()
+
         self.init_replay_buffer()
 
-        self.teacher = UDRL()
+        self.teacher = UDRL(config=self.config, replay_buffer=self.replay_buffer)
 
-        self.init_wandb()
 
     
     def init_replay_buffer(self):
@@ -51,20 +56,21 @@ class EVATrainer:
         self.collected_episodes = 0
 
         self.replay_buffer = PrioritizedTrajectoryReplayBuffer(
-            size=int(self.config.get("replay_buffer_size")),
-            seed=self.seed)
+            size=int(self.config.get("replay_buffer_size")))
                
         # warm up replay buffer with random episodes
         if self.config.get("warmup_with_random_trajectories"):
             num_episode = int(self.config.get("num_warmup_episodes"))
-            for _ in tqdm(range(num_episode)):
-                episode_return = collect_one_episode(self.env, self.agent, 
+
+            for i in range(num_episode):
+                
+                episode_return = collect_one_episode(self.env, RandomPolicy(self.env), 
                         self.replay_buffer, self.sparse_reward, 
                         teacher=None)
-                
                 # step counter and log 
                 self.collected_episodes += 1
-                wandb.log({"achieved_episode_return": episode_return}, step=self.collected_episodes)
+                if self.log_to_wandb:
+                    wandb.log({"achieved_episode_return": episode_return}, step=self.collected_episodes)
 
         
     def init_wandb(self):
@@ -87,15 +93,37 @@ class EVATrainer:
             dir=os.path.join(root_path)
         )
     
+    # ground_truth_actions: discrete: [B], continuous: [B,action_dim]
     def compute_loss(self, aug_states, ground_truth_actions):
         """Compute loss of self._learner on the expert_actions.
         """
 
         if self.loss_type == "mse":
+            # predicted_actions: discrete: [B], continuous: [B,action_dim]
             predicted_actions = self.agent.forward(aug_states)
+
+            #print("------------------------")
+            # if ground_truth_actions.dim() < 2:
+            #     ground_truth_actions = torch.unsqueeze(ground_truth_actions,1)
+            #print(predicted_actions.shape)
+            
+            #print(ground_truth_actions.shape)
+
+           # exit()
+            predicted_actions = predicted_actions.float()
+            #print(predicted_actions.dtype)
+            #print(ground_truth_actions.dtype)
+            #predicted_actions.requires_grad = True
+            #assert predicted_actions.requires_grad == True and ground_truth_actions.requires_grad == False
+            
+            #print(torch.mean((ground_truth_actions - predicted_actions)**2))
+            #exit()
             return torch.mean((ground_truth_actions - predicted_actions)**2)
         elif self.loss_type == "log_prob":
+            # log_probs: [B] for both discrete or continuous actions
             log_probs = self.agent.get_log_probs(aug_states, ground_truth_actions)
+            #print(log_probs.size())
+            #exit()
             return -torch.mean(log_probs)
         else:
             print("Error: undefined loss type: %s"%(self.loss_type))
@@ -111,17 +139,26 @@ class EVATrainer:
             self.agent.zero_grad()
             aug_states = behavior_batch['augmented_state']
             ground_truth_actions = behavior_batch['ground_truth_action']
+            #print(aug_states.shape)
+            #print(ground_truth_actions.shape)
+            # aug_states: [B,aug_state_dim]
+            # ground_truth_actions: discrete: [B], continuous: [B,action_dim]
             loss = self.compute_loss(aug_states, ground_truth_actions)
             loss.backward()
             self.optimizer.step()
 
             # step counter and log
             self.training_step += 1
-            wandb.log({"batch_loss": loss.cpu().detach()}, step=self.training_step)
+            if self.log_to_wandb:
+                wandb.log({"batch_loss": loss.cpu().detach()}, step=self.training_step)
 
     def train(self):
         # set loss function and optimizer
         self.loss_type = self.config.get("loss_type")
+        if self.loss_type == "mse" and self.agent.discrete_action == True:
+            print("Error: the loss function should not be mse when the action space is discrete")
+            exit()
+
         self.optimizer = torch.optim.Adam(self.agent.parameters(), 
             lr=float(self.config.get("learning_rate")))
 
@@ -133,7 +170,9 @@ class EVATrainer:
 
         # train for N iterations
         num_train_iterations = int(self.config.get("num_train_iterations"))
-        for _ in range(num_train_iterations):
+        for i in range(num_train_iterations):
+            print("-------------------------")
+            print("Iteration %d start ..."%i)
             # teacher generate training set
             train_dataset_loader = self.teacher.construct_train_dataset()
 
@@ -155,13 +194,20 @@ class EVATrainer:
 
                 # step counter and log
                 self.collected_episodes += 1
-                wandb.log({"achieved_episode_return": episode_return}, step=self.collected_episodes)
-                
-                if "horizon" in target_type:
-                    wandb.log({"target_episode_horizon": self.teacher.get_episode_target_horizon()}, step=self.collected_episodes)
-                if "target" in target_type:
-                    wandb.log({"target_episode_return": self.teacher.get_episode_target_return()}, step=self.collected_episodes)
-                
+                if self.log_to_wandb:
+                    wandb.log({"achieved_episode_return": episode_return}, step=self.collected_episodes)
+                    
+                    if "horizon" in target_type:
+                        wandb.log({"target_episode_horizon": self.teacher.get_episode_target_horizon()}, step=self.collected_episodes)
+                    if "target" in target_type:
+                        wandb.log({"target_episode_return": self.teacher.get_episode_target_return()}, step=self.collected_episodes)
+
+            print("Iteration %d done."%i)
+
         self.env.close()
         
         print("Training done.")
+
+if __name__ == "__main__": 
+    trainer = EVATrainer()
+    trainer.train()

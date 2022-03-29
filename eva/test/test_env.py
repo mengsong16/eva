@@ -37,6 +37,10 @@ def test_env(env_id):
         state_dim = int(np.prod(env.observation_space.shape))
         print("State dimension: %d"%(state_dim)) 
     print("***********************************")
+    #print(env.spec)
+    if hasattr(env.spec, "max_episode_steps"):
+        print("Env timestep limit: %d"%env.spec.max_episode_steps)
+    print("***********************************")    
     
     env.close() 
 
@@ -45,7 +49,6 @@ if __name__ == "__main__":
     # 'LunarLander-v2'  # action: 4(d), state: 8(c)
     # 'InvertedDoublePendulum-v2' # action: 1(c), state: 11(c)
     # 'Swimmer-v2' # action: 2(c), state: 8(c)
-    # 'InvertedDoublePendulum-v2' # action: 1(c), state: 11(c)
     # ---------------- d4rl ---------------
     # 'minigrid-fourrooms-v0' # action: 7(d), state: 7*7*3(c)
     # 'maze2d-umaze-v1' # action: 2(c), state: 4(c)

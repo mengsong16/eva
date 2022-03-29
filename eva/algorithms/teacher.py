@@ -25,7 +25,7 @@ class UDRL(Teacher):
 
     def scale_target(self, tgt_horizon, tgt_return):
         scaled_tgt_horizon = tgt_horizon * self.horizon_scale
-        scaled_tgt_return *= tgt_return * self.return_scale
+        scaled_tgt_return = tgt_return * self.return_scale
 
         return [scaled_tgt_horizon, scaled_tgt_return]
 
@@ -71,11 +71,12 @@ class UDRL(Teacher):
         self.step_tgt_return -= reward  
     
     # for exploration
+    # return a numpy array
     def get_current_step_target(self):
         self.step_tgt_horizon, self.step_tgt_return = self.scale_target(
             self.step_tgt_horizon, self.step_tgt_return)
 
-        return [self.step_tgt_horizon, self.step_tgt_return]    
+        return np.asarray([self.step_tgt_horizon, self.step_tgt_return])    
 
     # for student learning
     def construct_train_dataset(self):
@@ -96,9 +97,10 @@ class UDRL(Teacher):
     # get achieved target, could relable like HER or use other strategies
     # for student learning
     # R: reward array of this episode
+    # return a numpy array
     def get_achieved_target(self, episode_len, start_index, R):
         # achieved target is the final state of the trajectory
         tgt_horizon = (episode_len - start_index - 1)
         tgt_return = np.sum(R[start_index:])
         tgt_horizon, tgt_return = self.scale_target(tgt_horizon, tgt_return)
-        return [tgt_horizon, tgt_return]
+        return np.asarray([tgt_horizon, tgt_return])

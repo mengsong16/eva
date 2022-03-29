@@ -21,7 +21,8 @@ class TanhNormal(torch.distributions.Distribution):
     def __init__(self, loc, scale):
         # batch_size * action_dim Gaussian distributions --> batch_size Gaussian distributions
         self._normal = Independent(Normal(loc, scale), 1)
-        super().__init__()
+        
+        super().__init__(validate_args=False)
 
     def log_prob(self, value, pre_tanh_value=None, epsilon=1e-6):
         """The log likelihood of a sample on the this Tanh Distribution.

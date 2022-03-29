@@ -1,6 +1,7 @@
 # env
-env_id: "LunarLander-v2"
-sparse_reward: true
+#env_id: "LunarLander-v2"
+env_id: "Swimmer-v2"
+#sparse_reward: true
 
 # seed
 seed: 4076
@@ -11,7 +12,7 @@ num_warmup_episodes: 10    # number of warm-up episodes at the beginning
 replay_buffer_size: 300   # max size of the replay buffer (in episodes)
 
 # policy
-deterministic_policy: false
+deterministic_policy: false #false
 hidden_size: 1024
 
 # teacher
@@ -25,10 +26,13 @@ horizon_scale: 0.01  # scaling factor for desired horizon input
 
 
 # train
-loss_type: "log_prob" # "mse"
+loss_type: "log_prob" #"log_prob" # "mse"
 batch_size: 512   # batch size per update
 learning_rate: 1e-3  # learning rate for ADAM optimizer
 num_train_iterations: 1000
 num_updates_per_iter: 100   # number of gradient-based updates per iteration
 num_train_episodes_per_iter: 5 # number of episodes used for training per iteration
 num_new_episodes_per_iter: 10    # number of new episodes generated per iteration
+
+# log
+log_to_wandb: false
