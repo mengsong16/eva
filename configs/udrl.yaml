@@ -1,10 +1,16 @@
 # env
-#env_id: "LunarLander-v2"
-env_id: "Swimmer-v2"
+env_id: "LunarLander-v2"
+#env_id: "Swimmer-v2"
 sparse_reward: true
 
 # seed
 seed: 4076
+
+# cuda
+gpu_id: 0
+
+# log
+log_to_wandb: true
 
 # replay buffer
 warmup_with_random_trajectories: true
@@ -34,5 +40,3 @@ num_updates_per_iter: 100   # number of gradient-based updates per iteration
 num_train_episodes_per_iter: 5 # number of episodes used for training per iteration
 num_new_episodes_per_iter: 10    # number of new episodes generated per iteration
 
-# log
-log_to_wandb: false

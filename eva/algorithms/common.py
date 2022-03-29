@@ -43,9 +43,10 @@ def collect_one_episode(env, agent, replay_buffer, sparse_reward, teacher=None):
 		if teacher is not None:
 			target = teacher.get_current_step_target()
 			aug_state = augment_state(state, target)
-			
+			# aug_state is numpy array
 			action = agent.get_actions(aug_state)
-		else:    
+		else:
+			# state is numpy array   
 			action = agent.get_actions(state)
 
 		if isinstance(action, np.ndarray) and agent.discrete_action:

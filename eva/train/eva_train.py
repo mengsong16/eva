@@ -9,7 +9,7 @@ from eva.replay_buffer.trajectory_replay_buffer import PrioritizedTrajectoryRepl
 from eva.policy.policy import RandomPolicy, Policy
 from eva.algorithms.common import *
 from eva.replay_buffer.behavior_dataset import BehaviorDataset
-from eva.utils.data_utils import parse_config
+from eva.utils.data_utils import parse_config, get_device
 from eva.utils.path import *
 from eva.algorithms.teacher import UDRL
 import wandb
@@ -28,6 +28,8 @@ class EVATrainer:
         self.env = gym.make(self.config.get("env_id")) 
 
         self.log_to_wandb = self.config.get("log_to_wandb")
+
+        self.device = get_device(self.config)
         
         # seed everything
         seed_env(self.env, self.seed)
@@ -40,6 +42,8 @@ class EVATrainer:
                             target_dim=int(self.config.get("target_dim")),
                             deterministic=self.config.get("deterministic_policy"),
                             hidden_size=int(self.config.get("hidden_size")))
+
+        
 
         # init wandb
         if self.log_to_wandb:
@@ -101,14 +105,12 @@ class EVATrainer:
         if self.loss_type == "mse":
             # predicted_actions: discrete: [B], continuous: [B,action_dim]
             predicted_actions = self.agent.forward(aug_states)
-
-            predicted_actions = predicted_actions.float()
-        
+            #predicted_actions = predicted_actions.float()
             #assert predicted_actions.requires_grad == True and ground_truth_actions.requires_grad == False
-            
+
             return torch.mean((ground_truth_actions - predicted_actions)**2)
         elif self.loss_type == "log_prob":
-            # log_probs: [B] for both discrete or continuous actions
+            # log_probs: [B] for both discrete and continuous actions
             log_probs = self.agent.get_log_probs(aug_states, ground_truth_actions)
             
             return -torch.mean(log_probs)
@@ -118,6 +120,8 @@ class EVATrainer:
 
     # train for one iteration
     def train_one_iteration(self, train_dataset_loader):
+        # switch model to correct device
+        self.agent.to(self.device)
         # switch model to training mode
         self.agent.train()
 
@@ -127,6 +131,10 @@ class EVATrainer:
             aug_states = behavior_batch['augmented_state']
             ground_truth_actions = behavior_batch['ground_truth_action']
 
+            # switch input to correct device
+            aug_states = aug_states.to(self.device)
+            ground_truth_actions = ground_truth_actions.to(self.device)
+            
             # aug_states: [B,aug_state_dim]
             # ground_truth_actions: discrete: [B], continuous: [B,action_dim]
             loss = self.compute_loss(aug_states, ground_truth_actions)

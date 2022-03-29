@@ -86,9 +86,13 @@ class Policy(nn.Module):
     def scale_actions(self, actions):
         return actions * self.action_scale + self.action_center
 
+    def get_device(self):
+        return next(self.parameters()).device
+
     def from_numpy_to_tensor(self, x):
         if not torch.is_tensor(x):
             x = torch.from_numpy(x).float()
+            x = x.to(self.get_device())
         return x
     
     # aug_states: [batch_size, state_dim + target_dim]
@@ -165,6 +169,7 @@ class Policy(nn.Module):
         with torch.no_grad():
             actions = self.forward(aug_states)
         
+            # to pass to environment
             return actions.cpu().numpy()
     
     # get log probability of given actions
@@ -177,7 +182,8 @@ class Policy(nn.Module):
         
         return dists.log_prob(given_actions)
 
-# input and output of softmax have the same shape
+# input and output of softmax have the same shape: [B,x]
+# output of argmax: [B]
 def test_softmax():
     m = nn.Softmax(dim=1)
     input = torch.randn(2, 3)
