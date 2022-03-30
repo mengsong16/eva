@@ -12,6 +12,8 @@ class PrioritizedTrajectoryReplayBuffer(object):
         self.size = size
         self.buffer = [] # initialized as a regular list; use heapq functions
 
+    # key: return
+    # value: episode (S,A,R,S_)
     def __getitem__(self, key):
         return self.buffer[key]
     
@@ -62,4 +64,5 @@ class PrioritizedTrajectoryReplayBuffer(object):
         return episodes
 
     def all_episodes(self):
-        return self.buffer    
+        episodes = [x[1] for x in self.buffer] 
+        return episodes 

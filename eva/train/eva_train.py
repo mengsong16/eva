@@ -37,7 +37,7 @@ class EVATrainer:
 
         self.sparse_reward = self.config.get("sparse_reward")
 
-        self.agent = Policy(state_dim=self.env.observation_space.shape[0], 
+        self.agent = Policy(state_dim=int(np.prod(self.env.observation_space.shape)), 
                             action_space=self.env.action_space, 
                             target_dim=int(self.config.get("target_dim")),
                             deterministic=self.config.get("deterministic_policy"),
@@ -74,7 +74,8 @@ class EVATrainer:
                 # step counter and log 
                 self.collected_episodes += 1
                 if self.log_to_wandb:
-                    wandb.log({"achieved_episode_return": episode_return}, step=self.collected_episodes)
+                    wandb.log({"achieved_episode_return": episode_return, 
+                    "collected_episodes": self.collected_episodes})
 
         
     def init_wandb(self):
@@ -96,7 +97,8 @@ class EVATrainer:
             config=self.config,
             dir=os.path.join(root_path)
         )
-    
+
+        
     # ground_truth_actions: discrete: [B], continuous: [B,action_dim]
     def compute_loss(self, aug_states, ground_truth_actions):
         """Compute loss of self._learner on the expert_actions.
@@ -144,7 +146,19 @@ class EVATrainer:
             # step counter and log
             self.training_step += 1
             if self.log_to_wandb:
-                wandb.log({"batch_loss": loss.cpu().detach()}, step=self.training_step)
+                wandb.log({"batch_loss": loss.cpu().detach(), "training_step": self.training_step})
+
+    def wandb_define_metric(self, target_type):
+        # define our custom x axis metric
+        wandb.define_metric("training_step", hidden=True)  # cannot hide it in automatic plotting
+        wandb.define_metric("collected_episodes", hidden=True) # cannot hide it in automatic plotting
+        # set metric to different x axis
+        wandb.define_metric("batch_loss", step_metric="training_step")
+        wandb.define_metric("achieved_episode_return", step_metric="collected_episodes")
+        if "horizon" in target_type:
+            wandb.define_metric("target_episode_horizon", step_metric="collected_episodes")
+        if "return" in target_type:
+            wandb.define_metric("target_episode_return", step_metric="collected_episodes")
 
     def train(self):
         # set loss function and optimizer
@@ -156,8 +170,12 @@ class EVATrainer:
         self.optimizer = torch.optim.Adam(self.agent.parameters(), 
             lr=float(self.config.get("learning_rate")))
 
-        # get targe type
-        target_type = list(self.config.get("target_type"))    
+        
+        # define wandb metric and corresponding x axis
+        if self.log_to_wandb:
+            # get target type
+            target_type = list(self.config.get("target_type"))
+            self.wandb_define_metric(target_type)
         
         # initialize training step counter
         self.training_step = 0
@@ -189,12 +207,15 @@ class EVATrainer:
                 # step counter and log
                 self.collected_episodes += 1
                 if self.log_to_wandb:
-                    wandb.log({"achieved_episode_return": episode_return}, step=self.collected_episodes)
+                    wandb.log({"achieved_episode_return": episode_return, 
+                    "collected_episodes": self.collected_episodes})
                     
                     if "horizon" in target_type:
-                        wandb.log({"target_episode_horizon": self.teacher.get_episode_target_horizon()}, step=self.collected_episodes)
-                    if "target" in target_type:
-                        wandb.log({"target_episode_return": self.teacher.get_episode_target_return()}, step=self.collected_episodes)
+                        wandb.log({"target_episode_horizon": self.teacher.get_episode_target_horizon(), 
+                        "collected_episodes": self.collected_episodes})
+                    if "return" in target_type:
+                        wandb.log({"target_episode_return": self.teacher.get_episode_target_return(), 
+                        "collected_episodes": self.collected_episodes})
 
             print("Iteration %d done."%i)
 

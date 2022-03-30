@@ -55,7 +55,7 @@ class BehaviorDataset(TorchDataset):
         # convert to torch tensor
         # aug_state: (state_dim,)
         # gt_action: (action_dim,)
-        # After stacking:
+        # After stacking (stack will create an extra dimension):
         # aug_state: (B, state_dim)
         # gt_action: (B, action_dim)
         sample = {

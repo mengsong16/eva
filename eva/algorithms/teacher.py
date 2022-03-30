@@ -36,6 +36,7 @@ class UDRL(Teacher):
             int(self.config.get("num_top_episodes"))) 
         
         # target horizon is the mean of top N episodes
+        # x[0]: S, x[2]: R
         tgt_horizon = int(np.mean([x[0].shape[0] for x in top_episodes]))
         self.tgt_horizon = min(tgt_horizon, int(self.config.get("min_target_horizon")))
         
@@ -61,7 +62,7 @@ class UDRL(Teacher):
     def get_episode_target_horizon(self):
         return self.episode_tgt_horizon
 
-    def get_episode_target_reward(self):
+    def get_episode_target_return(self):
         return self.episode_tgt_return      
             
     # generate target for next state when collecting new data
@@ -73,10 +74,10 @@ class UDRL(Teacher):
     # for exploration
     # return a numpy array
     def get_current_step_target(self):
-        self.step_tgt_horizon, self.step_tgt_return = self.scale_target(
+        scaled_target = self.scale_target(
             self.step_tgt_horizon, self.step_tgt_return)
 
-        return np.asarray([self.step_tgt_horizon, self.step_tgt_return])    
+        return np.asarray(scaled_target)    
 
     # for student learning
     def construct_train_dataset(self):
@@ -100,7 +101,7 @@ class UDRL(Teacher):
     # return a numpy array
     def get_achieved_target(self, episode_len, start_index, R):
         # achieved target is the final state of the trajectory
-        tgt_horizon = (episode_len - start_index - 1)
+        tgt_horizon = episode_len - start_index - 1
         tgt_return = np.sum(R[start_index:])
-        tgt_horizon, tgt_return = self.scale_target(tgt_horizon, tgt_return)
-        return np.asarray([tgt_horizon, tgt_return])
+        scaled_target = self.scale_target(tgt_horizon, tgt_return)
+        return np.asarray(scaled_target)
