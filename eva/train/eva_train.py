@@ -83,25 +83,27 @@ class EVATrainer:
                     "collected_episodes": self.collected_episodes})
 
     def set_experiment_name(self):
-        self.project_name = 'eva'
+        self.project_name = 'eva'.lower()
 
         env_name = str(self.config.get("env_id"))
         if self.sparse_reward:
             env_name = env_name + "-sparse"
         algorithm_name = self.config.get("algorithm_name")
-        self.group_name = f'{algorithm_name}-{env_name}'
+        self.group_name = (f'{algorithm_name}-{env_name}').lower()
 
         # experiment_name - YearMonthDay-HourMiniteSecond
         now = datetime.datetime.now()
-        self.experiment_name = now.strftime("%Y%m%d-%H%M%S") 
+        self.experiment_name = "s%d-"%(self.seed)+now.strftime("%Y%m%d-%H%M%S").lower() 
 
     def init_wandb(self):
         
+        #random.randint(int(1e5), int(1e6) - 1)
+        
         # initialize this run under project xxx
         wandb.init(
-            name=self.experiment_name.lower(),
-            group=self.group_name.lower(),
-            project=self.project_name.lower(),
+            name=self.experiment_name,
+            group=self.group_name,
+            project=self.project_name,
             config=self.config,
             dir=os.path.join(root_path)
         )

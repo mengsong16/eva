@@ -4,7 +4,7 @@ env_id: "LunarLander-v2"
 sparse_reward: true
 
 # seed
-seed: 4076
+seed: 4076 #1
 
 # cuda
 gpu_id: 0

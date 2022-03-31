@@ -72,7 +72,7 @@ class EVAEvaluator:
         # load agent network
         self.agent.load_state_dict(checkpoint)
         self.agent.to(self.device)
-        print("Agent state loaded")
+        print("Agent state loaded.")
 
     # evaluate one episode
     def evaluate_one_episode(self, target):
