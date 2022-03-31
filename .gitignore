@@ -4,3 +4,4 @@ eva.egg-info
 .vscode
 data
 wandb
+checkpoints
