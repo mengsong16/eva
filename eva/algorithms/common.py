@@ -31,7 +31,7 @@ def collect_one_episode(env, agent, replay_buffer, sparse_reward, teacher=None):
 			'rewards': [],
 			'next_states': []
 	}
-	episode_reward = 0
+	episode_return = 0
 
 	# reset
 	state = env.reset()
@@ -54,7 +54,7 @@ def collect_one_episode(env, agent, replay_buffer, sparse_reward, teacher=None):
 
 		state, reward, done, _ = env.step(action)
 
-		episode_reward += reward
+		episode_return += reward
 		episode['actions'].append(action)
 		episode['next_states'].append(state)
 		# get actual reward
@@ -65,7 +65,7 @@ def collect_one_episode(env, agent, replay_buffer, sparse_reward, teacher=None):
 				actual_reward = reward  
 		else:  
 			if sparse_reward:        
-				actual_reward = episode_reward    # finally add total episode reward
+				actual_reward = episode_return    # finally add total episode reward
 			else:
 				actual_reward = reward
 		
@@ -76,13 +76,13 @@ def collect_one_episode(env, agent, replay_buffer, sparse_reward, teacher=None):
 	
 	# add episode data to the replay buffer
 	replay_buffer.add_episode(
-		np.array(episode['states'], dtype=np.float),
-		np.array(episode['actions'], dtype=np.float),
-		np.array(episode['rewards'], dtype=np.float),
-		np.array(episode['next_states'], dtype=np.float),
+		np.array(episode['states'], dtype=np.float32),
+		np.array(episode['actions'], dtype=np.float32),
+		np.array(episode['rewards'], dtype=np.float32),
+		np.array(episode['next_states'], dtype=np.float32),
 	)
 
-	return episode_reward
+	return episode_return
 	
 
 def seed_env(env: gym.Env, seed: int) -> None:

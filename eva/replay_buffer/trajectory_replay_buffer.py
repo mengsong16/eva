@@ -31,12 +31,12 @@ class PrioritizedTrajectoryReplayBuffer(object):
         """
         episode = (S, A, R, S_)
         # no discounting
-        episode_reward = np.sum(R)
+        episode_return = np.sum(R)
         # heapq is a min-heap
 
         if S.shape[0] > 1: # ignore episodes that has only one step
             # each item in the heap has form (return, (S,A,R,S_))
-            item = (episode_reward, episode) # -1 for desc ordering
+            item = (episode_return, episode) # -1 for desc ordering
             if len(self.buffer) < self.size:
                 heapq.heappush(self.buffer, item) 
             # when buffer is full, always remove the episodes with smallest return    

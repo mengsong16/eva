@@ -14,6 +14,8 @@ from eva.utils.path import *
 from eva.algorithms.teacher import UDRL
 import wandb
 import os
+import datetime
+
 
 
 class EVATrainer:
@@ -43,7 +45,8 @@ class EVATrainer:
                             deterministic=self.config.get("deterministic_policy"),
                             hidden_size=int(self.config.get("hidden_size")))
 
-        
+        # set experiment name
+        self.set_experiment_name()
 
         # init wandb
         if self.log_to_wandb:
@@ -51,9 +54,11 @@ class EVATrainer:
 
         self.init_replay_buffer()
 
-        self.teacher = UDRL(config=self.config, replay_buffer=self.replay_buffer)
-
-
+        if self.config.get("algorithm_name") == "udrl":
+            self.teacher = UDRL(config=self.config, replay_buffer=self.replay_buffer)
+        else:
+            print("Error: undefined teacher name: %s"%(self.config.get("algorithm_name")))
+            exit()
     
     def init_replay_buffer(self):
         # initialize data collection counter
@@ -77,23 +82,26 @@ class EVATrainer:
                     wandb.log({"achieved_episode_return": episode_return, 
                     "collected_episodes": self.collected_episodes})
 
-        
-    def init_wandb(self):
-        project_name = 'eva'
+    def set_experiment_name(self):
+        self.project_name = 'eva'
 
         env_name = str(self.config.get("env_id"))
         if self.sparse_reward:
             env_name = env_name + "-sparse"
         algorithm_name = self.config.get("algorithm_name")
-        group_name = f'{algorithm_name}-{env_name}'
+        self.group_name = f'{algorithm_name}-{env_name}'
 
-        # group_name - 6 digit random number
-        experiment_name = f'{group_name}-{random.randint(int(1e5), int(1e6) - 1)}'
+        # experiment_name - YearMonthDay-HourMiniteSecond
+        now = datetime.datetime.now()
+        self.experiment_name = now.strftime("%Y%m%d-%H%M%S") 
+
+    def init_wandb(self):
+        
         # initialize this run under project xxx
         wandb.init(
-            name=experiment_name.lower(),
-            group=group_name.lower(),
-            project=project_name.lower(),
+            name=self.experiment_name.lower(),
+            group=self.group_name.lower(),
+            project=self.project_name.lower(),
             config=self.config,
             dir=os.path.join(root_path)
         )
@@ -182,6 +190,8 @@ class EVATrainer:
 
         # train for N iterations
         num_train_iterations = int(self.config.get("num_train_iterations"))
+        save_every_iterations = int(self.config.get("save_every_iterations"))
+        
         for i in range(num_train_iterations):
             print("-------------------------")
             print("Iteration %d start ..."%i)
@@ -219,9 +229,32 @@ class EVATrainer:
 
             print("Iteration %d done."%i)
 
+            # save checkpoint
+            if (i+1) % save_every_iterations == 0:
+                self.save_checkpoint(checkpoint_number = int((i+1) // save_every_iterations))
+
+        # save last checkpoint if haven't
+        if num_train_iterations % save_every_iterations != 0:
+            self.save_checkpoint(checkpoint_number = int(num_train_iterations // save_every_iterations +1))
+
         self.env.close()
-        
+
+        print("-------------------------")
         print("Training done.")
+    
+    # Save checkpoint with specified name
+    def save_checkpoint(self, checkpoint_number):
+        # only save agent weights
+        checkpoint = self.agent.state_dict()
+        folder_name = self.group_name + "-" + self.experiment_name
+        folder_path = os.path.join(checkpoints_path, folder_name)
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+
+        checkpoint_path = os.path.join(folder_path, f"ckpt_{checkpoint_number}.pth")
+        torch.save(checkpoint, checkpoint_path)
+
+        print(f"Checkpoint {checkpoint_number} saved.")
 
 if __name__ == "__main__": 
     trainer = EVATrainer()

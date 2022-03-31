@@ -31,6 +31,7 @@ class UDRL(Teacher):
 
     # generate target for current training iteration
     # for exploration
+    # tracking iterationwise target for training
     def generate_iteration_target(self):
         top_episodes = self.replay_buffer.top_episodes(
             int(self.config.get("num_top_episodes"))) 
@@ -47,6 +48,7 @@ class UDRL(Teacher):
     
     # generate target for current episode when collecting new data
     # for exploration
+    # tracking episodewise and stepwise target for training
     def generate_episode_target(self): 
         # sample target return from [mean, mean+std)
         # random_sample: sample from [0.0, 1.0)
@@ -63,21 +65,30 @@ class UDRL(Teacher):
         return self.episode_tgt_horizon
 
     def get_episode_target_return(self):
-        return self.episode_tgt_return      
+        return self.episode_tgt_return 
+
+    # for evaluation
+    # target is a numpy array
+    def set_initial_step_target(self, target):
+        self.step_tgt_horizon, self.step_tgt_return = target
             
     # generate target for next state when collecting new data
     # for exploration
+    # tracking stepwise target for training
+    # need to set initial step target when used for evaluation
     def generate_next_step_target(self, reward):
         self.step_tgt_horizon = max(1, self.step_tgt_horizon-1)
         self.step_tgt_return -= reward  
     
     # for exploration
     # return a numpy array
+    # tracking stepwise target for training
+    # need to set initial step target when used for evaluation
     def get_current_step_target(self):
         scaled_target = self.scale_target(
             self.step_tgt_horizon, self.step_tgt_return)
 
-        return np.asarray(scaled_target)    
+        return np.asarray(scaled_target) 
 
     # for student learning
     def construct_train_dataset(self):
@@ -99,6 +110,7 @@ class UDRL(Teacher):
     # for student learning
     # R: reward array of this episode
     # return a numpy array
+    # to construct dataset for student learning
     def get_achieved_target(self, episode_len, start_index, R):
         # achieved target is the final state of the trajectory
         tgt_horizon = episode_len - start_index - 1
