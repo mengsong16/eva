@@ -12,6 +12,7 @@ from eva.replay_buffer.behavior_dataset import BehaviorDataset
 from eva.utils.data_utils import parse_config, get_device
 from eva.utils.path import *
 from eva.algorithms.teacher import UDRL
+from eva.envs.common import *
 import wandb
 import os
 import datetime
@@ -27,7 +28,8 @@ class EVATrainer:
 
         self.seed = int(self.config.get("seed"))
 
-        self.env = gym.make(self.config.get("env_id")) 
+        #self.env = gym.make(self.config.get("env_id"))
+        self.env = create_env(self.config.get("env_id")) 
 
         self.log_to_wandb = self.config.get("log_to_wandb")
 
