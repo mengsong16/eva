@@ -5,3 +5,5 @@ eva.egg-info
 data
 wandb
 checkpoints
+eva/envs/gcsl_envs/dependencies
+
