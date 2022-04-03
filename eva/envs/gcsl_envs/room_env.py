@@ -84,3 +84,16 @@ class PointmassGoalEnv(GymGoalEnvWrapper):
                 ))
             
         return statistics
+
+#------------------- Children mazes -------------------#
+class PointmassWallEnv(PointmassGoalEnv):
+    def __init__(self):
+        super(PointmassWallEnv, self).__init__(room_type='wall')     
+
+class PointmassRoomsEnv(PointmassGoalEnv):
+    def __init__(self):
+        super(PointmassRoomsEnv, self).__init__(room_type='rooms') 
+
+class PointmassEmptyEnv(PointmassGoalEnv):
+    def __init__(self):
+        super(PointmassEmptyEnv, self).__init__(room_type='empty')

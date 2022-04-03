@@ -18,6 +18,46 @@ from eva.envs.gcsl_envs.sawyer_door import SawyerDoorGoalEnv
 from eva.envs.gcsl_envs.lunarlander import LunarEnv
 from eva.envs.gcsl_envs.claw_env import ClawEnv
 
+from gym.envs.registration import register
+
+# register envs to gym 
+register(
+    id='pointmass-rooms-v0',
+    entry_point='eva.envs.gcsl_envs.room_env:PointmassRoomsEnv',
+)
+
+register(
+    id='pointmass-empty-v0',
+    entry_point='eva.envs.gcsl_envs.room_env:PointmassEmptyEnv',
+)
+
+register(
+    id='pointmass-wall-v0',
+    entry_point='eva.envs.gcsl_envs.room_env:PointmassWallEnv',
+)
+
+register(
+    id='sawyerpush-v0',
+    entry_point='eva.envs.gcsl_envs.sawyer_push:SawyerPushGoalEnv',
+)
+
+register(
+    id='sawyerdoor-v0',
+    entry_point='eva.envs.gcsl_envs.sawyer_door:SawyerDoorGoalEnv',
+)
+
+register(
+    id='claw-v0',
+    entry_point='eva.envs.gcsl_envs.claw_env:ClawEnv',
+)
+
+register(
+    id='lunargoal-v0',
+    entry_point='eva.envs.gcsl_envs.lunarlander:LunarEnv',
+)
+
+#-----------------------------------------------------------------------
+
 env_names = ['pointmass_rooms', 'pointmass_empty', 'pusher', 'lunar', 'door', 'claw']
 
 def create_env(env_name):

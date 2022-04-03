@@ -1,9 +1,10 @@
 import numpy as np
 import random
 import gym
+from gym.spaces import Dict, Box, Discrete
 import torch
 
-from eva.envs.gcsl_envs.room_env import PointmassGoalEnv
+from eva.envs.gcsl_envs.room_env import PointmassGoalEnv, PointmassRoomsEnv
 from eva.envs.gcsl_envs.sawyer_push import SawyerPushGoalEnv
 from eva.envs.gcsl_envs.sawyer_door import SawyerDoorGoalEnv
 from eva.envs.gcsl_envs.lunarlander import LunarEnv
@@ -14,6 +15,7 @@ from eva.envs.bitflip import BitFlippingGymEnv
 
 class GymToGoalReaching(gym.ObservationWrapper):
     """Wrap a Gym env into a GoalReaching env.
+       Need to provide goal_space, achieved_goal, desired_goal
     """
 
     def __init__(self, env):
@@ -21,6 +23,11 @@ class GymToGoalReaching(gym.ObservationWrapper):
         
         self.achieved_goal = None
         self.desired_goal = None
+
+        assert self.env.observation_space["achieved_goal"] == self.env.observation_space["desired_goal"]
+        self.goal_space = self.env.observation_space["achieved_goal"]
+
+        self.observation_space = self.env.observation_space["observation"]
 
     def reset(self):
         observation = super(GymToGoalReaching, self).reset()
@@ -40,19 +47,13 @@ class GymToGoalReaching(gym.ObservationWrapper):
 
         return state['observation']
     
-    def goal_space(self):
-        assert self.env.observation_space["achieved_goal"] == self.env.observation_space["desired_goal"]
-        return self.env.observation_space["achieved_goal"]
 
 class GCSLToGoalReaching(gym.ObservationWrapper):
     """Wrap a GCSL env into a GoalReaching env.
+       Need to provide goal_space, achieved_goal, desired_goal
     """
 
     def __init__(self, env):
-        if not isinstance(env, goal_env.GoalEnv):
-            print("Error: the environment needs to be a GCSL env")
-            exit()
-        
         super(GCSLToGoalReaching, self).__init__(env)
         
         self.achieved_goal = None
@@ -79,32 +80,38 @@ class GCSLToGoalReaching(gym.ObservationWrapper):
 
         return self.env.observation(state)
 
-def create_env(env_type, env_id, fixed_start=True, fixed_goal=True):
-    if env_type == "gym":
-        env = gym.make(env_id)
-    elif env_type == "gcsl":   
-        if "Pointmass" in env_id: 
-            if "Rooms" in env_id:
-                env = PointmassGoalEnv(room_type='rooms', fixed_start=fixed_start, fixed_goal=fixed_goal) 
-            elif "Wall" in env_id:
-                env = PointmassGoalEnv(room_type='wall', fixed_start=fixed_start, fixed_goal=fixed_goal)
-            else:
-                env = PointmassGoalEnv(room_type='empty', fixed_start=fixed_start, fixed_goal=fixed_goal)        
-        elif env_id == "SawyerPush": 
-            env = SawyerPushGoalEnv(fixed_start=fixed_start, fixed_goal=fixed_goal) 
-        elif env_id == "SawyerDoor": 
-            env = SawyerDoorGoalEnv(fixed_start=fixed_start, fixed_goal=fixed_goal)
-        elif env_id == "Lunar":
-            env = LunarEnv(fixed_start=fixed_start, fixed_goal=fixed_goal)  
-        elif env_id == "Claw":
-            env = ClawEnv(fixed_start=fixed_start, fixed_goal=fixed_goal)              
-        else:
-            print("Error: undefined env: %s"%(env_id))
-            exit()
-    else:
-        print("Error: undefined env: %s"%(env_id))
-        exit()
+def is_instance_gym_goal_env(env): 
+    
+    if not isinstance(env.observation_space, gym.spaces.Dict):
+        return False
 
+    if "achieved_goal" in env.observation_space.keys() and "desired_goal" in env.observation_space.keys():
+        return True
+    else:
+        return False
+
+def is_instance_gcsl_env(env):
+    # Note that gym.make returns a gym wrapper instead of the real class
+    # unwrapped removes the register wrapper
+    if not isinstance(env.unwrapped, goal_env.GoalEnv):
+        return False
+    else:
+        return True   
+
+def is_instance_goalreaching_env(env):
+    if isinstance(env, GCSLToGoalReaching) or isinstance(env, GymToGoalReaching):
+        return True
+    else:
+        return False    
+
+def create_env(env_id):
+    env = gym.make(env_id)
+    if is_instance_gym_goal_env(env):
+        env = GymToGoalReaching(env)
+    elif is_instance_gcsl_env(env):
+        env = GCSLToGoalReaching(env)
+    #else:
+    #    print("The environment in neither a GCSL env nor a Gym goal env")
     return env	
 
 

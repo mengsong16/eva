@@ -31,14 +31,14 @@ class MazeEnv(BaseMazeEnv):
         self.impassable_array = self.maze.to_impassable()
         self.motions = VonNeumannMotion()
     
-        if self.random_goal:
-            self.observation_space = Dict(dict(
-                desired_goal=Box(low=np.array([0,0]), high=np.array([self.maze.size[0],self.maze.size[1]]), shape=(2,), dtype=np.int8),
-                achieved_goal=Box(low=np.array([0,0]), high=np.array([self.maze.size[0],self.maze.size[1]]), shape=(2,), dtype=np.int8),
-                observation=Box(low=np.array([0,0]), high=np.array([self.maze.size[0],self.maze.size[1]]), shape=(2,), dtype=np.int8),
-            ))
-        else:    
-            self.observation_space = Box(low=np.array([0,0]), high=np.array([self.maze.size[0],self.maze.size[1]]), shape=(2,), dtype=np.uint8)
+        #if self.random_goal:
+        self.observation_space = Dict(dict(
+            desired_goal=Box(low=np.array([0,0]), high=np.array([self.maze.size[0],self.maze.size[1]]), shape=(2,), dtype=np.int8),
+            achieved_goal=Box(low=np.array([0,0]), high=np.array([self.maze.size[0],self.maze.size[1]]), shape=(2,), dtype=np.int8),
+            observation=Box(low=np.array([0,0]), high=np.array([self.maze.size[0],self.maze.size[1]]), shape=(2,), dtype=np.int8),
+        ))
+        # else:    
+        #     self.observation_space = Box(low=np.array([0,0]), high=np.array([self.maze.size[0],self.maze.size[1]]), shape=(2,), dtype=np.uint8)
         
         self.action_space = Discrete(len(self.motions))
 
@@ -83,9 +83,9 @@ class MazeEnv(BaseMazeEnv):
         # get achieved goal
         self._achieved_goal = self.get_observation()    
 
-        print("------------------------")
-        print("Maze initialized")
-        print("------------------------")
+        #print("------------------------")
+        #print("Maze initialized")
+        #print("------------------------")
         #self.print_start_goal()       
         
     # should return state, reward, done, info    
@@ -118,13 +118,14 @@ class MazeEnv(BaseMazeEnv):
 
             success = False    
 
-        if self.random_goal:
-            return {"observation": self.get_observation().copy(),\
-            "desired_goal": self.get_goal().copy(), "achieved_goal": self.get_achieved_goal().copy()}, float(reward), done, \
-            {"action_mask": self.get_action_mask(), 'is_success': success}
-        else:    
-            # return agent's current position as observation
-            return self.get_observation().copy(), float(reward), done, {"action_mask": self.get_action_mask(), 'is_success': success}
+        #if self.random_goal:
+        return {"observation": self.get_observation().copy(),\
+        "desired_goal": self.get_goal().copy(), "achieved_goal": self.get_achieved_goal().copy()}, float(reward), done, \
+        {'is_success': success}    
+        #{"action_mask": self.get_action_mask(), 'is_success': success}
+        # else:    
+        #     # return agent's current position as observation
+        #     return self.get_observation().copy(), float(reward), done, {"action_mask": self.get_action_mask(), 'is_success': success}
         
     def reset(self):
         if self.random_start:   
@@ -140,11 +141,11 @@ class MazeEnv(BaseMazeEnv):
 
         self.step_count = 0
         
-        if self.random_goal:
-            return {"observation": self.get_observation().copy(),\
-            "desired_goal": self.get_goal().copy(), "achieved_goal": self.get_achieved_goal().copy()}
-        else:    
-            return self.get_observation().copy()   
+        #if self.random_goal:
+        return {"observation": self.get_observation().copy(),\
+        "desired_goal": self.get_goal().copy(), "achieved_goal": self.get_achieved_goal().copy()}
+        # else:    
+        #     return self.get_observation().copy()   
 
     def reset_robot(self):
         self.maze.objects.agent.positions = [self.start_pos]
