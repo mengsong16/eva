@@ -8,7 +8,7 @@ from eva.envs.gcsl_envs import goal_env
 from eva.envs.mazelab.env import EmptyMazeEnv, UMazeEnv, FourRoomEnv
 from eva.envs.bitflip import BitFlippingGymEnv
 
-def test_env(env_id):
+def test_env(env_id, render=False):
     env = create_env(env_id)
     
     for episode in range(2):
@@ -23,6 +23,8 @@ def test_env(env_id):
         for i in range(500):  # max steps per episode
             action = env.action_space.sample()
             state, reward, done, info = env.step(action)
+            if render:
+                env.render()
             #print(state)
             #print(reward)
             if done:
@@ -97,12 +99,12 @@ if __name__ == "__main__":
     # fixed goal or not, fixed start or not
     
     gym_env_list = ['LunarLander-v2', 'InvertedDoublePendulum-v2', 'Swimmer-v2']
-    d4rl_env_list = ['minigrid-fourrooms-v0', 'maze2d-umaze-v1', 'antmaze-umaze-v0', 'kitchen-complete-v0']
+    d4rl_env_list = ['minigrid-fourrooms-v0', 'maze2d-umaze-v1', 'antmaze-umaze-v0', 'kitchen-complete-v0'] # 'minigrid-fourrooms-random-v0'
     gcsl_env_list = ['pointmass-rooms-v0', 'pointmass-wall-v0', 'pointmass-empty-v0',
         'sawyerpush-v0', 'sawyerdoor-v0', 'claw-v0', 'lunargoal-v0']
     gym_goal_env_list = ['FetchPickAndPlace-v1', 'FetchPush-v1', 'FetchReach-v1', 'FetchSlide-v1']
     maze_list = ['empty-maze-v0', 'umaze-v0', 'four-room-v0']
     bit_flip = ['bitflip-v0']
 
-    test_envs(maze_list)
-    
+    #test_envs(maze_list)
+    test_env('four-room-v0', render=True)

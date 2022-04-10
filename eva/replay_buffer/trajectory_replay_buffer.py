@@ -66,3 +66,54 @@ class PrioritizedTrajectoryReplayBuffer(object):
     def all_episodes(self):
         episodes = [x[1] for x in self.buffer] 
         return episodes 
+
+class TrajectoryBuffer(object):
+    """
+    Unlimited trajectory buffer
+    """
+    def __init__(self):
+        self.buffer = [] # initialized as a regular list
+    
+    def __len__(self):
+        return len(self.buffer)
+
+    # add one episode in form of [s,a,r,s']
+    # Note: s, s' are not augmented, this allows goal changes as HER
+    def add_episode(self, S, A, R, S_):
+        """ all inputs are numpy arrays; num_rows = timesteps
+        S  : states
+        A  : actions
+        R  : rewards
+        S_ : next states
+        """
+        episode = (S, A, R, S_)
+        
+        if S.shape[0] > 1: # ignore episodes that has only one step
+            self.buffer.append(episode)
+
+    def summary(self):
+        self.episode_returns = []
+        self.episode_horizons = []
+        for episode in self.buffer:
+            (S, A, R, S_) = episode
+            episode_horizon = R.shape[0]
+            episode_return = np.sum(R)
+
+            self.episode_returns.append(episode_return)
+            self.episode_horizons.append(episode_horizon)
+
+        self.episode_returns = np.array(self.episode_returns, dtype=np.float32)
+        self.episode_horizons = np.array(self.episode_horizons, dtype=np.int64)
+
+        print("-------------- Dataset summary --------------")
+        print("Number of episodes: %d"%(len(self.buffer)))
+        print("------------------------------------------------")
+        print("Min return: %f"%(np.min(self.episode_returns, axis=0)))
+        print("Mean return: %f"%(np.mean(self.episode_returns, axis=0)))
+        print("Max return: %f"%(np.max(self.episode_returns, axis=0)))
+        print("------------------------------------------------")
+        print("Min horizon: %f"%(np.min(self.episode_horizons, axis=0)))
+        print("Mean horizon: %f"%(np.mean(self.episode_horizons, axis=0)))
+        print("Max horizon: %f"%(np.max(self.episode_horizons, axis=0)))
+        print("------------------------------------------------")
+        

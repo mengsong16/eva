@@ -1,7 +1,7 @@
 # env
 #env_id: "LunarLander-v2"
 env_id: "Swimmer-v2"
-sparse_reward: true #true
+sparse_reward: false #true
 
 # seed
 seed: 1 #4076 #1
@@ -10,7 +10,7 @@ seed: 1 #4076 #1
 gpu_id: 0
 
 # log
-log_to_wandb: false #true
+log_to_wandb: true #true
 
 # replay buffer
 warmup_with_random_trajectories: true

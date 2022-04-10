@@ -32,10 +32,11 @@ class MazeEnv(BaseMazeEnv):
         self.motions = VonNeumannMotion()
     
         #if self.random_goal:
+        # state: [height, width]
         self.observation_space = Dict(dict(
-            desired_goal=Box(low=np.array([0,0]), high=np.array([self.maze.size[0],self.maze.size[1]]), shape=(2,), dtype=np.int8),
-            achieved_goal=Box(low=np.array([0,0]), high=np.array([self.maze.size[0],self.maze.size[1]]), shape=(2,), dtype=np.int8),
-            observation=Box(low=np.array([0,0]), high=np.array([self.maze.size[0],self.maze.size[1]]), shape=(2,), dtype=np.int8),
+            desired_goal=Box(low=np.array([0,0]), high=np.array([self.maze.size[0]-1,self.maze.size[1]-1]), shape=(2,), dtype=np.int8),
+            achieved_goal=Box(low=np.array([0,0]), high=np.array([self.maze.size[0]-1,self.maze.size[1]-1]), shape=(2,), dtype=np.int8),
+            observation=Box(low=np.array([0,0]), high=np.array([self.maze.size[0]-1,self.maze.size[1]-1]), shape=(2,), dtype=np.int8),
         ))
         # else:    
         #     self.observation_space = Box(low=np.array([0,0]), high=np.array([self.maze.size[0],self.maze.size[1]]), shape=(2,), dtype=np.uint8)

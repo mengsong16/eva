@@ -6,4 +6,5 @@ data
 wandb
 checkpoints
 eva/envs/gcsl_envs/dependencies
+figures
 

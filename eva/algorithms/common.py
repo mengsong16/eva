@@ -84,7 +84,16 @@ def collect_one_episode(env, agent, replay_buffer, sparse_reward, teacher=None):
 	)
 
 	return episode_return
-	
+
+# episode = (S, A, R, S_)
+# S,A,R,S_ are float numpy arrays
+# return a float numpy array [T, state_dim]
+def get_one_episode_states(episode):
+	(S, A, R, S_) = episode
+	a = np.append(S, np.expand_dims(S_[-1], axis=0), axis=0)
+
+	return a
+
 
 def seed_env(env: gym.Env, seed: int) -> None:
     """Set the random seed of the environment."""

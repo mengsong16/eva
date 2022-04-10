@@ -120,7 +120,7 @@ class EVAEvaluator:
         target = np.array(target, dtype=np.float32)
         results = []
         num_eval_episodes = int(self.config.get("num_eval_episodes"))
-        avg_episode_return = 0
+        #avg_episode_return = 0
         for i in range(num_eval_episodes):
             episode_return = self.evaluate_one_episode(target)
             results.append(episode_return)
@@ -131,7 +131,7 @@ class EVAEvaluator:
             print("Return: %f"%(episode_return))
             print('-----------------------------')
             
-            avg_episode_return += episode_return
+            #avg_episode_return += episode_return
 
         results = np.array(results, dtype=np.float32)
         print("-------------- Evaluation summary --------------")
