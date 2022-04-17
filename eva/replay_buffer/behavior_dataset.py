@@ -12,16 +12,20 @@ class BehaviorDataset(TorchDataset):
         super(BehaviorDataset, self).__init__()
         self.episodes = episodes
         self.config = config
+        # the number of data points in this dataset is not the size of the dataset
+        # the size of the dataset = number of batches * batch_size
+        # each data is a (s,a) tuple sampled from one episode
+        # the size of dataset is not the number of episodes
         self.size = int(config.get("batch_size")) * int(config.get("num_updates_per_iter"))
         self.teacher = teacher
 
     def __len__(self):
-        # just returning a placeholder number for now
         return self.size
 
     def get_target(self):
         pass    
 
+    # each batch is sampled independently, so different batches can include the same data point
     def __getitem__(self, idx):
         # get episode
         if torch.is_tensor(idx):

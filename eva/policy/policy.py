@@ -91,14 +91,15 @@ class Policy(nn.Module):
     def from_numpy_to_tensor(self, x):
         if not torch.is_tensor(x):
             x = torch.from_numpy(x).float()
-            x = x.to(self.get_device())
+        
+        x = x.to(self.get_device())
         return x
     
     # aug_states: [batch_size, state_dim + target_dim]
     # return [batch_size, 1] distributions
     # allow backprop
     def get_distributions(self, aug_states):
-        # ensure aug_states are tensors
+        # ensure aug_states are tensors on the same device
         aug_states = self.from_numpy_to_tensor(aug_states)
 
         mlp_output = self.mlp_module(aug_states)
@@ -132,7 +133,7 @@ class Policy(nn.Module):
 
     # allow backprop
     def get_deterministic_actions(self, aug_states):
-        # ensure aug_states are tensors
+        # ensure aug_states are tensors on the same device
         aug_states = self.from_numpy_to_tensor(aug_states)
 
         mlp_output = self.mlp_module(aug_states)
