@@ -13,7 +13,6 @@ def empty_maze(width, height):
 
 	save_maze(env_id, x)
 
-
 	return x
 
 if __name__ == "__main__":

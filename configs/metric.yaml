@@ -22,7 +22,13 @@ output_dim: 2
 loss_type: "triplet"
 batch_size: 512   # batch size per update
 learning_rate: 5e-4 #1e-3  # learning rate for ADAM optimizer
-max_train_epochs: 50 
+max_train_epochs: 500 
 
 # log
 log_every_batches: 1000
+
+# evaluation
+#eval_checkpoint_folder: "triplet-empty-maze-v0-20220422-181523" 
+eval_checkpoint_folder: "triplet-empty-maze-v0-20220417-025040"
+dim_reduct_type: "original"
+color_coding: "l2"

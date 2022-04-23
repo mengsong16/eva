@@ -51,7 +51,7 @@ class EncoderMLP(nn.Module):
         return self.mlp_module(states)
     
     # for evaluation, return numpy arrays
-    def eval(self, states):
+    def evaluate_state(self, states):
         with torch.no_grad():
             output = self.forward(states)
 

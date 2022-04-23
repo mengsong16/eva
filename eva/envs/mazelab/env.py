@@ -366,9 +366,9 @@ class FourRoomEnv(MazeEnv):
 
 
 if __name__ == "__main__":
-    #env = EmptyMazeEnv(start=(1,1), goal=(4,4), random_start=True, random_goal=True) 
+    env = EmptyMazeEnv(start=(1,10), goal=(7,10), random_start=False, random_goal=False) 
     #env = UMazeEnv(start=(1,1), goal=(6,4), random_start=True, random_goal=True)
-    env = FourRoomEnv(start=(1,1), goal=(6,4), random_start=False, random_goal=False)
+    #env = FourRoomEnv(start=(1,1), goal=(6,4), random_start=False, random_goal=False)
     #env_id = "four-room-v0"
     #env = gym.make(env_id, start=(1,10), goal=(7,10), random_goal=True)
     actions, path_length = env.shortest_path()
@@ -377,7 +377,7 @@ if __name__ == "__main__":
     num_steps_per_epoch = 200
 
     
-    for episode in range(20):
+    for episode in range(100):
         print("***********************************")
         print('Episode: {}'.format(episode))
         step = 0
