@@ -6,6 +6,10 @@ from torch.utils.data import DataLoader as TorchDataLoader
 import numpy as np
 from tqdm.notebook import tqdm
 
+from rlkit.launchers.launcher_util import setup_logger
+import rlkit.torch.pytorch_util as ptu
+from eva.utils.path import *
+from eva.utils.data_utils import parse_config, get_device
 
 # state is a numpy array: [B, state_dim]
 # target is a numpy array: [B, target_dim]
@@ -94,17 +98,18 @@ def get_one_episode_states(episode):
 
 	return a
 
-
 def seed_env(env: gym.Env, seed: int) -> None:
     """Set the random seed of the environment."""
     # if seed is None:
     #     seed = np.random.randint(2 ** 31 - 1)
-        
+    seed = int(seed)
     env.seed(seed)
     env.action_space.seed(seed)
     env.observation_space.seed(seed)
 
-def seed_other(seed):
+def seed_other(seed: int):
+    seed = int(seed)
+
     random.seed(seed)
     np.random.seed(seed)
 
@@ -113,4 +118,33 @@ def seed_other(seed):
         torch.backends.cudnn.deterministic = True 
         torch.backends.cudnn.benchmark = False
 
+# ========== for rlkit ====================
+def yaml2variant(config_filename):
+    config_file = os.path.join(config_path, config_filename)
+    config = parse_config(config_file)
+    #print("=========== Config ==============")
+    #print(config)
+    #print("=================================")
+    return config
 
+def run_experiment(config_filename, experiment):
+    variant = yaml2variant(config_filename=config_filename)
+    seed = variant["seed"]
+    # experiment directory: based_log_dir/exp_prefix/exp_name 
+    # exp_name = exp_prefix_timestamp--s-seed
+    # log_dir: based_log_dir/exp_prefix
+    # base_log_dir = conf.LOCAL_LOG_DIR by default, parameter for create_log_dir
+    exp_prefix = ("%s-%s"%(variant["algorithm"], variant["env_id"])).lower()
+
+    # set seed using our methods
+    seed_other(seed)
+
+    # set logger
+    setup_logger(exp_prefix=exp_prefix, variant=variant, 
+                base_log_dir=checkpoints_path, seed=seed)
+    
+    # set gpu mode
+    ptu.set_gpu_mode(mode=True, gpu_id=variant["gpu_id"])  
+    
+    # start experiment
+    experiment(variant)

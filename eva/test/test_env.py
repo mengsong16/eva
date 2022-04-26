@@ -8,6 +8,8 @@ from eva.envs.gcsl_envs import goal_env
 from eva.envs.mazelab.env import EmptyMazeEnv, UMazeEnv, FourRoomEnv
 from eva.envs.bitflip import BitFlippingGymEnv
 
+import multiworld.envs.gridworlds
+
 def test_env(env_id, render=False):
     env = create_env(env_id)
     
@@ -107,4 +109,5 @@ if __name__ == "__main__":
     bit_flip = ['bitflip-v0']
 
     #test_envs(maze_list)
-    test_env('four-room-v0', render=True)
+    #test_env('four-room-v0', render=True)
+    test_env('GoalGridworld-v0', render=True)
