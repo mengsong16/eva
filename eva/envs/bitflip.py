@@ -16,16 +16,16 @@ class BitFlippingGymEnv(gym.Env):
     spec = EnvSpec(id='bitflip-v0')
 
     # environment_dimension: the length of bit sequence and the max length of episode
-    def __init__(self, environment_dimension=20, random_goal=False, random_start=False):
+    def __init__(self, environment_dimension=20, random_goal=True, random_start=True):
         self.action_space = spaces.Discrete(environment_dimension)
         # if deterministic:
         #     self.observation_space = spaces.Box(0, 1, shape=(environment_dimension,), dtype=np.float32)
         # else:    
-        self.observation_space = spaces.Dict(dict(
+        self.observation_space = spaces.Dict(
             desired_goal=spaces.Box(0, 1, shape=(environment_dimension,), dtype=np.float32),
             achieved_goal=spaces.Box(0, 1, shape=(environment_dimension,), dtype=np.float32),
             observation=spaces.Box(0, 1, shape=(environment_dimension,), dtype=np.float32),
-        ))
+        )
 
         self.environment_dimension = environment_dimension
         self.reward_for_achieving_goal = 0.0

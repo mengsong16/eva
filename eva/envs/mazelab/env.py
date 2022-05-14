@@ -17,7 +17,7 @@ import numpy as np
 
 # BaseMazeEnv is already gym.Env and already implement seed
 class MazeEnv(BaseMazeEnv):
-    def __init__(self, env_id=None, start=None, goal=None, random_goal=False, random_start=False, max_episode_steps=200):
+    def __init__(self, env_id=None, start=None, goal=None, random_goal=True, random_start=True, max_episode_steps=200):
         super().__init__()
         
         # load maze
@@ -33,11 +33,11 @@ class MazeEnv(BaseMazeEnv):
     
         #if self.random_goal:
         # state: [height, width]
-        self.observation_space = Dict(dict(
+        self.observation_space = Dict(
             desired_goal=Box(low=np.array([0,0]), high=np.array([self.maze.size[0]-1,self.maze.size[1]-1]), shape=(2,), dtype=np.int8),
             achieved_goal=Box(low=np.array([0,0]), high=np.array([self.maze.size[0]-1,self.maze.size[1]-1]), shape=(2,), dtype=np.int8),
             observation=Box(low=np.array([0,0]), high=np.array([self.maze.size[0]-1,self.maze.size[1]-1]), shape=(2,), dtype=np.int8),
-        ))
+        )
         # else:    
         #     self.observation_space = Box(low=np.array([0,0]), high=np.array([self.maze.size[0],self.maze.size[1]]), shape=(2,), dtype=np.uint8)
         
@@ -264,15 +264,15 @@ class MazeEnv(BaseMazeEnv):
 
 #------------------- Children mazes -------------------#
 class EmptyMazeEnv(MazeEnv):
-    def __init__(self, start=(1,10), goal=(7,10), random_goal=False, random_start=False, max_episode_steps=200):
+    def __init__(self, start=(1,10), goal=(7,10), random_goal=True, random_start=True, max_episode_steps=200):
         super(EmptyMazeEnv, self).__init__(env_id="empty-maze-v0", start=start, goal=goal, random_goal=random_goal, random_start=random_start, max_episode_steps=max_episode_steps)     
 
 class UMazeEnv(MazeEnv):
-    def __init__(self, start=(1,10), goal=(7,10), random_goal=False, random_start=False, max_episode_steps=200):
+    def __init__(self, start=(1,10), goal=(7,10), random_goal=True, random_start=True, max_episode_steps=200):
         super(UMazeEnv, self).__init__(env_id="umaze-v0", start=start, goal=goal, random_goal=random_goal, random_start=random_start, max_episode_steps=max_episode_steps)   
 
 class FourRoomEnv(MazeEnv):
-    def __init__(self, start=(1,1), goal=(17,17), random_goal=False, random_start=False, max_episode_steps=200):
+    def __init__(self, start=(1,1), goal=(17,17), random_goal=True, random_start=True, max_episode_steps=200):
         super(FourRoomEnv, self).__init__(env_id="four-room-v0", start=start, goal=goal, random_goal=random_goal, random_start=random_start, max_episode_steps=max_episode_steps)
 
     def in_which_room(self, start, goal): 

@@ -7,6 +7,7 @@ from eva.envs.common import *
 from eva.envs.gcsl_envs import goal_env
 from eva.envs.mazelab.env import EmptyMazeEnv, UMazeEnv, FourRoomEnv
 from eva.envs.bitflip import BitFlippingGymEnv
+import highway_env
 
 import multiworld.envs.gridworlds
 
@@ -108,6 +109,14 @@ if __name__ == "__main__":
     maze_list = ['empty-maze-v0', 'umaze-v0', 'four-room-v0']
     bit_flip = ['bitflip-v0']
 
-    #test_envs(maze_list)
+    #test_envs(gym_goal_env_list)
+    #test_envs(gcsl_env_list)
+    test_envs(maze_list)
     #test_env('four-room-v0', render=True)
-    test_env('GoalGridworld-v0', render=True)
+    #test_env('GoalGridworld-v0', render=True)
+    #test_env("parking-v0", render=False)
+    #env = create_env("parking-v0")
+    #env = create_env('four-room-v0')
+    #env = gym.make('four-room-v0')
+    #env = gym.make("parking-v0")
+    #print(get_wrapper_class(env))

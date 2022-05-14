@@ -1,0 +1,37 @@
+# basic
+algorithm: "PPO"
+env_id: "umaze-v0"
+experiment_name: "ppo-umaze-absolute-goal"
+
+# seed
+seed: 2
+
+# cuda
+gpu_id: 0
+
+# vec env
+n_envs: 6 # = batch_size
+
+# encoder
+output_dim: 512
+hidden_dim: 512
+hidden_layer: 2
+
+# goal
+goal_format: "absolute"
+
+# training
+total_timesteps: 20000
+
+# Evaluation
+num_test_episodes: 10
+  
+# ppo
+gamma: 0.99  # discount factor
+learning_rate: 0.0003
+n_steps: 2048
+batch_size: 64  # mini batch size
+n_epochs: 10
+gae_lambda: 0.95 
+clip_range: 0.2
+ent_coef: 0.0

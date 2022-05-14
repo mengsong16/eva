@@ -2,6 +2,7 @@ import numpy as np
 import random
 import gym
 from gym.spaces import Dict, Box, Discrete
+from gym import spaces
 import torch
 
 from eva.envs.gcsl_envs.room_env import PointmassGoalEnv, PointmassRoomsEnv
@@ -27,7 +28,7 @@ class GymToGoalReaching(gym.ObservationWrapper):
         assert self.env.observation_space["achieved_goal"] == self.env.observation_space["desired_goal"]
         self.goal_space = self.env.observation_space["achieved_goal"]
 
-        self.observation_space = self.env.observation_space["observation"]
+        self.observation_space = self.env.observation_space
 
     def reset(self):
         observation = super(GymToGoalReaching, self).reset()
@@ -40,12 +41,13 @@ class GymToGoalReaching(gym.ObservationWrapper):
 
         return observation, reward, done, info
 
+    # return dictionary {observation, achieved_goal} instead of dictionary {observation, achieved_goal, desired_goal}
     def observation(self, state):
         """Fetch the environment observation."""
         self.achieved_goal = state['achieved_goal']
         self.desired_goal = state['desired_goal']
 
-        return state['observation']
+        return state
     
 
 class GCSLToGoalReaching(gym.ObservationWrapper):
@@ -58,6 +60,14 @@ class GCSLToGoalReaching(gym.ObservationWrapper):
         
         self.achieved_goal = None
         self.desired_goal = None
+
+        self.observation_space = spaces.Dict(
+            observation=self.env.observation_space,
+            achieved_goal=self.env.goal_space,
+            desired_goal=self.env.goal_space
+        )
+
+        self.goal_space = self.env.goal_space
 
     def reset(self):
         """Reset the environment and the desired goal"""
@@ -78,7 +88,13 @@ class GCSLToGoalReaching(gym.ObservationWrapper):
         """Fetch the real environment observation and achieved goal"""
         self.achieved_goal = self.env.extract_goal(state)
 
-        return self.env.observation(state)
+        assert self.achieved_goal.shape[0] == self.desired_goal.shape[0]
+
+        state_dict = {"observation":self.env.observation(state), 
+            "achieved_goal":self.achieved_goal.copy(), 
+            "desired_goal": self.desired_goal.copy()}
+
+        return state_dict
 
 def is_instance_gym_goal_env(env): 
     
@@ -110,8 +126,13 @@ def create_env(env_id):
         env = GymToGoalReaching(env)
     elif is_instance_gcsl_env(env):
         env = GCSLToGoalReaching(env)
-    #else:
-    #    print("The environment in neither a GCSL env nor a Gym goal env")
+    else:
+        print("The environment in neither a GCSL env nor a Gym goal env")
     return env	
 
-
+# only consider wrapper GymToGoalReaching or GCSLToGoalReaching
+def get_wrapper_class(env):
+    if isinstance(env, GymToGoalReaching) or isinstance(env, GCSLToGoalReaching):
+        return type(env)
+    else:    
+        return None
