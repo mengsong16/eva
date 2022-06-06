@@ -80,6 +80,16 @@ class PPOTrainer:
         
         model.save(os.path.join(checkpoints_folder, self.exp_name))
 
+    # return True or False
+    def check_is_success(self, info):
+        if is_instance_gym_goal_env(self.env):
+            return info["is_success"]
+        elif is_instance_gcsl_env(self.env):    
+            return self.env.is_success()
+        else:
+            print("Error: must be either a gym goal env or a gcsl env")
+            exit()    
+
     def eval(self, render=False): 
         # load model   
         checkpoints_folder = os.path.join(checkpoints_path, self.exp_prefix)
@@ -87,6 +97,8 @@ class PPOTrainer:
         print("Model loaded")
 
         num_test_episodes = int(self.config.get("num_test_episodes"))
+
+        success_array = []
         for i in range(num_test_episodes):
             # run one episode
             obs = self.env.reset()
@@ -97,8 +109,13 @@ class PPOTrainer:
                     self.env.render()
 
                 if done:
+                    success_array.append(float(self.check_is_success(info)))
                     break
 
+        # print success rate    
+        success_array = np.array(success_array, dtype=np.float32)
+        success_rate = np.mean(success_array, axis=0)
+        print("Success rate: %f"%(success_rate))
 
 if __name__ == "__main__": 
     ppo_trainer = PPOTrainer()

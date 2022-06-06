@@ -48,6 +48,9 @@ class GymToGoalReaching(gym.ObservationWrapper):
         self.desired_goal = state['desired_goal']
 
         return state
+
+    #def is_success(self):
+          
     
 
 class GCSLToGoalReaching(gym.ObservationWrapper):
@@ -68,6 +71,29 @@ class GCSLToGoalReaching(gym.ObservationWrapper):
         )
 
         self.goal_space = self.env.goal_space
+
+        self.set_goal_threshold()
+
+    def set_goal_threshold(self):
+        env_name = self.env.spec.id
+        
+        self.env.spec.max_episode_steps = 1e6
+        if env_name == 'pusher':
+            self.goal_threshold = 0.05
+        elif 'pick' in env_name:
+            self.goal_threshold = 0.05
+        elif env_name == 'door':
+            self.goal_threshold = 0.05
+        elif 'pointmass' in env_name:
+            self.goal_threshold = 0.08
+            self.env.spec.max_episode_steps = 2e5
+        elif env_name == 'lunar':
+            self.goal_threshold = 0.08
+            self.env.spec.max_episode_steps = 2e5
+        elif env_name == 'claw':
+            self.goal_threshold = 0.1
+        else:
+            self.goal_threshold = 0.05
 
     def reset(self):
         """Reset the environment and the desired goal"""
@@ -95,6 +121,19 @@ class GCSLToGoalReaching(gym.ObservationWrapper):
             "desired_goal": self.desired_goal.copy()}
 
         return state_dict
+    
+    # Euclidean distance
+    def goal_distance(self):
+        diff = self.achieved_goal - self.desired_goal
+        #return np.linalg.norm(diff, axis=-1) 
+        return np.linalg.norm(diff.flatten(), axis=-1) 
+
+    def is_success(self):
+        dist = self.goal_distance()
+        success = (dist < self.goal_threshold)
+
+        return success
+
 
 def is_instance_gym_goal_env(env): 
     
