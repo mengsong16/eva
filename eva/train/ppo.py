@@ -9,14 +9,28 @@ from stable_baselines3.common.env_util import make_vec_env
 import os
 import numpy as np
 from eva.models.state_goal import CatAbsoluteGoalState, CatRelativeGoalState 
+import datetime
+from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3.common.utils import safe_mean
+
+class TensorboardCallback(BaseCallback):
+    """
+    Custom callback for plotting additional values in tensorboard.
+    """
+
+    def __init__(self, verbose=0):
+        super(TensorboardCallback, self).__init__(verbose)
+
+    def _on_step(self) -> bool:
+        # Log scalar value: success_rate of recent 100 rollouts
+        self.logger.record("rollout/success_rate", safe_mean([float(ep_succ) for ep_succ in self.model.ep_success_buffer]))
+        return True
 
 class PPOTrainer:
     def __init__(self, config_filename="ppo.yaml"):
         self.config = yaml2variant(config_filename=config_filename)
         self.env_id = self.config.get("env_id")
-        
-        self.exp_prefix = ("%s-%s"%(self.config.get("algorithm"), self.env_id)).lower()
-        self.exp_name = self.config.get("experiment_name")
+
 
         self.goal_format = self.config.get("goal_format")
         assert self.goal_format in ["absolute", "relative"], "Error: undefined goal format: %s"%(self.goal_format)
@@ -30,12 +44,22 @@ class PPOTrainer:
         self.seed = self.config.get("seed")
         seed_env(self.env, self.seed)
         seed_other(self.seed)
+
+        # get experiment name
+        self.exp_prefix = ("%s-%s-%s"%(self.config.get("algorithm"), self.env_id, self.goal_format)).lower()
+        # experiment_name - YearMonthDay-HourMiniteSecond
+        now = datetime.datetime.now()
+        self.exp_name = "s%d-"%(self.seed)+now.strftime("%Y%m%d-%H%M%S").lower() 
+
         
     def train(self):
         if self.goal_format == "absolute":
             encoder_class = CatAbsoluteGoalState
         elif self.goal_format == "relative":
             encoder_class = CatRelativeGoalState
+        else:
+            print("Error: undefined goal format: %s"%(self.goal_format))
+            exit()    
 
         policy_kwargs = dict(
             features_extractor_class=encoder_class,
@@ -71,7 +95,7 @@ class PPOTrainer:
 
         # train
         model.learn(total_timesteps=int(self.config.get("total_timesteps")), 
-            tb_log_name=self.exp_name)
+            tb_log_name=self.exp_name, callback=TensorboardCallback())
         
         # save model
         checkpoints_folder = os.path.join(checkpoints_path, self.exp_prefix)
@@ -93,8 +117,9 @@ class PPOTrainer:
     def eval(self, render=False): 
         # load model   
         checkpoints_folder = os.path.join(checkpoints_path, self.exp_prefix)
-        model = PPO.load(os.path.join(checkpoints_folder, self.exp_name))
-        print("Model loaded")
+        checkpoint_path = os.path.join(checkpoints_folder, self.config.get("eval_exp_name"))
+        model = PPO.load(checkpoint_path)
+        print("Model loaded from %s"%(checkpoint_path))
 
         num_test_episodes = int(self.config.get("num_test_episodes"))
 
@@ -112,7 +137,7 @@ class PPOTrainer:
                     success_array.append(float(self.check_is_success(info)))
                     break
 
-        # print success rate    
+        # print success rate   
         success_array = np.array(success_array, dtype=np.float32)
         success_rate = np.mean(success_array, axis=0)
         print("Success rate: %f"%(success_rate))
@@ -120,4 +145,4 @@ class PPOTrainer:
 if __name__ == "__main__": 
     ppo_trainer = PPOTrainer()
     ppo_trainer.train()
-    ppo_trainer.eval(render=True)
+    #ppo_trainer.eval(render=False)

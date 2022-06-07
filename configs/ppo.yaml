@@ -1,7 +1,7 @@
 # basic
 algorithm: "PPO"
-env_id: "umaze-v0"
-experiment_name: "ppo-umaze-absolute-goal"
+env_id: "umaze-v0" #"bitflip-v0" #"umaze-v0"
+
 
 # seed
 seed: 2
@@ -10,7 +10,7 @@ seed: 2
 gpu_id: 0
 
 # vec env
-n_envs: 6 # = batch_size
+n_envs: 6 
 
 # encoder
 output_dim: 512
@@ -18,20 +18,21 @@ hidden_dim: 512
 hidden_layer: 2
 
 # goal
-goal_format: "absolute"
+goal_format: "relative" #"relative" #"absolute"
 
 # training
-total_timesteps: 20000
+total_timesteps: 200000 # how many steps to collect
 
 # Evaluation
-num_test_episodes: 10
+num_test_episodes: 100
+eval_exp_name: "ppo-bitflip-relative-goal"
   
 # ppo
 gamma: 0.99  # discount factor
 learning_rate: 0.0003
-n_steps: 2048
-batch_size: 64  # mini batch size
-n_epochs: 10
+n_steps: 2048 # n_envs * n_steps = rollout buffer size
+batch_size: 64  # batch size
+n_epochs: 10  # how many times the steps in rollout buffer are used to update the networks
 gae_lambda: 0.95 
 clip_range: 0.2
 ent_coef: 0.0

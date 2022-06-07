@@ -88,4 +88,4 @@ class CatRelativeGoalState(GoalConditionedState):
     def forward(self, states):
         cat_states = torch.cat((states["observation"], states["desired_goal"]-states["achieved_goal"]), dim=1)
 
-        return super(CatAbsoluteGoalState, self).forward(cat_states)
+        return super(CatRelativeGoalState, self).forward(cat_states)
