@@ -108,6 +108,8 @@ class GCSLToGoalReaching(gym.ObservationWrapper):
         """Take a step in the environment."""
         observation, reward, done, info = super(GCSLToGoalReaching, self).step(action)
 
+        info["is_success"] = self.is_success()
+
         return observation, reward, done, info
 
     def observation(self, state):
@@ -167,6 +169,9 @@ def create_env(env_id):
         env = GCSLToGoalReaching(env)
     else:
         print("The environment in neither a GCSL env nor a Gym goal env")
+
+    print("====> Environment created: %s"%(env_id))
+
     return env	
 
 # only consider wrapper GymToGoalReaching or GCSLToGoalReaching

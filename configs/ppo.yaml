@@ -25,7 +25,7 @@ total_timesteps: 200000 # how many steps to collect
 
 # Evaluation
 num_test_episodes: 100
-eval_exp_name: "ppo-bitflip-relative-goal"
+eval_exp_name: "s2-20220608-004139.zip"
   
 # ppo
 gamma: 0.99  # discount factor

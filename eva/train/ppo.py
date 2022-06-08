@@ -183,12 +183,15 @@ class PPOTrainer:
 
         self.device = torch.device('cuda:%d'%(self.config.get("gpu_id")))
 
-        # create a single env
-        self.env = create_env(self.env_id)
+        # create a single env for evaluation
+        # will be used to get wrapper for vectorized envs
+        self.eval_env = create_env(self.env_id)
 
-        # set everything
+        # get seed
         self.seed = self.config.get("seed")
-        seed_env(self.env, self.seed)
+        # seed evaluation env
+        seed_env(self.eval_env, self.seed)
+        # set everything
         seed_other(self.seed)
 
         # get experiment name
@@ -215,8 +218,9 @@ class PPOTrainer:
 
         # Parallel environments
         # env is a string or gym.Env
-        env_vec = make_vec_env(self.env_id, 
-                n_envs=int(self.config.get("n_envs")), 
+        # make_vec_env return wrapped envs
+        env_vec = make_vec_env(env_id=self.env_id, 
+                n_envs=int(self.config.get("n_envs")), seed=self.seed,
                 wrapper_class=get_wrapper_class(self.env))
 
         # create policy
@@ -239,11 +243,8 @@ class PPOTrainer:
                 policy_kwargs=policy_kwargs, 
                 tensorboard_log=tensorboard_folder)
 
-
-        # create separate evaluation env
-        eval_env = create_env(self.env_id)
         # Use deterministic actions for evaluation
-        eval_callback = EvalCallback(eval_env=eval_env, eval_freq=100,
+        eval_callback = EvalCallback(eval_env=self.eval_env, eval_freq=100,
                                     deterministic=False, render=False)
 
         # train
@@ -255,47 +256,11 @@ class PPOTrainer:
         if not os.path.exists(checkpoints_folder):
             os.makedirs(checkpoints_folder)
         
-        model.save(os.path.join(checkpoints_folder, self.exp_name))
+        model.save(os.path.join(checkpoints_folder, self.exp_name))    
 
-    # return True or False
-    def check_is_success(self, info):
-        if is_instance_gym_goal_env(self.env):
-            return info["is_success"]
-        elif is_instance_gcsl_env(self.env):    
-            return self.env.is_success()
-        else:
-            print("Error: must be either a gym goal env or a gcsl env")
-            exit()    
-
-    def eval(self, render=False): 
-        # load model   
-        checkpoints_folder = os.path.join(checkpoints_path, self.exp_prefix)
-        checkpoint_path = os.path.join(checkpoints_folder, self.config.get("eval_exp_name"))
-        model = PPO.load(checkpoint_path)
-        print("Model loaded from %s"%(checkpoint_path))
-
-        num_test_episodes = int(self.config.get("num_test_episodes"))
-
-        success_array = []
-        for i in range(num_test_episodes):
-            # run one episode
-            obs = self.env.reset()
-            while True:
-                action, _states = model.predict(obs)
-                obs, reward, done, info = self.env.step(action)
-                if render:
-                    self.env.render()
-
-                if done:
-                    success_array.append(float(self.check_is_success(info)))
-                    break
-
-        # print success rate   
-        success_array = np.array(success_array, dtype=np.float32)
-        success_rate = np.mean(success_array, axis=0)
-        print("Success rate: %f"%(success_rate))
+    
 
 if __name__ == "__main__": 
     ppo_trainer = PPOTrainer()
     ppo_trainer.train()
-    #ppo_trainer.eval(render=False)
+    
