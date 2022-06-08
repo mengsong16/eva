@@ -10,21 +10,167 @@ import os
 import numpy as np
 from eva.models.state_goal import CatAbsoluteGoalState, CatRelativeGoalState 
 import datetime
-from stable_baselines3.common.callbacks import BaseCallback
+import warnings
+from typing import Any, Callable, Dict, List, Optional, Union
+
+from stable_baselines3.common.callbacks import BaseCallback, EventCallback
 from stable_baselines3.common.utils import safe_mean
+from stable_baselines3.common import base_class  # pytype: disable=pyi-error
+from stable_baselines3.common.evaluation import evaluate_policy
+from stable_baselines3.common.vec_env import DummyVecEnv, VecEnv, sync_envs_normalization
 
-class TensorboardCallback(BaseCallback):
+class EvalCallback(EventCallback):
     """
-    Custom callback for plotting additional values in tensorboard.
+    Callback for evaluating an agent.
+
+    .. warning::
+
+      When using multiple environments, each call to  ``env.step()``
+      will effectively correspond to ``n_envs`` steps.
+      To account for that, you can use ``eval_freq = max(eval_freq // n_envs, 1)``
+
+    :param eval_env: The environment used for initialization
+    :param callback_after_eval: Callback to trigger after every evaluation
+    :param n_eval_episodes: The number of episodes to test the agent
+    :param eval_freq: Evaluate the agent every ``eval_freq`` call of the callback.
+    :param deterministic: Whether the evaluation should
+        use a stochastic or deterministic actions.
+    :param render: Whether to render or not the environment during evaluation
+    :param verbose:
+    :param warn: Passed to ``evaluate_policy`` (warns if ``eval_env`` has not been
+        wrapped with a Monitor wrapper)
     """
 
-    def __init__(self, verbose=0):
-        super(TensorboardCallback, self).__init__(verbose)
+    def __init__(
+        self,
+        eval_env,
+        callback_after_eval: Optional[BaseCallback] = None,
+        n_eval_episodes: int = 10,
+        eval_freq: int = 100,
+        deterministic: bool = False,
+        render: bool = False,
+        verbose: int = 1,
+        warn: bool = True,
+    ):
+        super().__init__(callback_after_eval, verbose=verbose)
+
+        self.n_eval_episodes = n_eval_episodes
+        self.eval_freq = eval_freq
+        self.deterministic = deterministic
+        self.render = render
+        self.warn = warn
+
+        # Convert to VecEnv for consistency
+        if not isinstance(eval_env, VecEnv):
+            eval_env = DummyVecEnv([lambda: eval_env])
+
+        self.eval_env = eval_env
+        
+        self.evaluations_results = []
+        self.evaluations_timesteps = []
+        self.evaluations_length = []
+        # For computing success rate
+        self._is_success_buffer = []
+        self.evaluations_successes = []
+
+    def _init_callback(self) -> None:
+        # Does not work in some corner cases, where the wrapper is not the same
+        if not isinstance(self.training_env, type(self.eval_env)):
+            warnings.warn("Training and eval env are not of the same type" f"{self.training_env} != {self.eval_env}")
+
+
+    def _log_success_callback(self, locals_: Dict[str, Any], globals_: Dict[str, Any]) -> None:
+        """
+        Callback passed to the  ``evaluate_policy`` function
+        in order to log the success rate (when applicable),
+        for instance when using HER.
+
+        :param locals_:
+        :param globals_:
+        """
+        info = locals_["info"]
+
+        if locals_["done"]:
+            maybe_is_success = float(info.get("is_success"))
+            if maybe_is_success is not None:
+                self._is_success_buffer.append(maybe_is_success)
 
     def _on_step(self) -> bool:
-        # Log scalar value: success_rate of recent 100 rollouts
-        self.logger.record("rollout/success_rate", safe_mean([float(ep_succ) for ep_succ in self.model.ep_success_buffer]))
-        return True
+
+        continue_training = True
+
+        # should evaluate
+        if self.eval_freq > 0 and self.n_calls % self.eval_freq == 0:
+
+            # Sync training and eval env if there is VecNormalize
+            if self.model.get_vec_normalize_env() is not None:
+                try:
+                    sync_envs_normalization(self.training_env, self.eval_env)
+                except AttributeError:
+                    raise AssertionError(
+                        "Training and eval env are not wrapped the same way, "
+                        "see https://stable-baselines3.readthedocs.io/en/master/guide/callbacks.html#evalcallback "
+                        "and warning above."
+                    )
+
+            # Reset success rate buffer
+            self._is_success_buffer = []
+
+            episode_rewards, episode_lengths = evaluate_policy(
+                self.model,
+                self.eval_env,
+                n_eval_episodes=self.n_eval_episodes,
+                render=self.render,
+                deterministic=self.deterministic,
+                return_episode_rewards=True,
+                warn=self.warn,
+                callback=self._log_success_callback,
+            )
+
+            # append success buffer with the success results of n_eval_episodes
+            if len(self._is_success_buffer) > 0:
+                self.evaluations_successes.append(self._is_success_buffer)
+                   
+
+            mean_reward, std_reward = np.mean(episode_rewards), np.std(episode_rewards)
+            mean_ep_length, std_ep_length = np.mean(episode_lengths), np.std(episode_lengths)
+            
+            if self.verbose > 0:
+                print(f"Eval num_timesteps={self.num_timesteps}, " f"episode_reward={mean_reward:.2f} +/- {std_reward:.2f}")
+                print(f"Episode length: {mean_ep_length:.2f} +/- {std_ep_length:.2f}")
+            
+            # Add mean reward and mean ep length to current Logger
+            self.logger.record("eval/mean_reward", float(mean_reward))
+            self.logger.record("eval/mean_ep_length", mean_ep_length)
+
+            # Add success rate of n_eval_episodes to current Logger
+            if len(self._is_success_buffer) > 0:
+                success_rate = np.mean(self._is_success_buffer)
+                if self.verbose > 0:
+                    print(f"Success rate: {100 * success_rate:.2f}%")
+                self.logger.record("eval/success_rate", success_rate)
+
+            # Dump log so the evaluation results are printed with the correct timestep
+            # self.num_timesteps: steps collected so far = n_envs * n times env.step() was called
+            self.logger.record("time/total_timesteps", self.num_timesteps, exclude="tensorboard")
+            self.logger.dump(self.num_timesteps)
+
+            # Trigger callback after every evaluation, if needed
+            if self.callback is not None:
+                continue_training = continue_training and self._on_event()
+
+        return continue_training
+
+
+    def update_child_locals(self, locals_: Dict[str, Any]) -> None:
+        """
+        Update the references to the local variables.
+
+        :param locals_: the local variables during rollout collection
+        """
+        if self.callback:
+            self.callback.update_locals(locals_)
+
 
 class PPOTrainer:
     def __init__(self, config_filename="ppo.yaml"):
@@ -93,9 +239,16 @@ class PPOTrainer:
                 policy_kwargs=policy_kwargs, 
                 tensorboard_log=tensorboard_folder)
 
+
+        # create separate evaluation env
+        eval_env = create_env(self.env_id)
+        # Use deterministic actions for evaluation
+        eval_callback = EvalCallback(eval_env=eval_env, eval_freq=100,
+                                    deterministic=False, render=False)
+
         # train
         model.learn(total_timesteps=int(self.config.get("total_timesteps")), 
-            tb_log_name=self.exp_name, callback=TensorboardCallback())
+            tb_log_name=self.exp_name, callback=eval_callback)
         
         # save model
         checkpoints_folder = os.path.join(checkpoints_path, self.exp_prefix)
