@@ -171,7 +171,7 @@ class EvalCallback(EventCallback):
 
 
 class PPOTrainer:
-    def __init__(self, config_filename="ppo.yaml"):
+    def __init__(self, config_filename):
         self.config = yaml2variant(config_filename=config_filename)
         self.env_id = self.config.get("env_id")
 
@@ -262,6 +262,6 @@ class PPOTrainer:
     
 
 if __name__ == "__main__": 
-    ppo_trainer = PPOTrainer()
+    ppo_trainer = PPOTrainer(config_filename="ppo-fetch-pick-place.yaml")
     ppo_trainer.train()
     

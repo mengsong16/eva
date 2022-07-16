@@ -21,7 +21,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecEnv, sync_envs_norm
 
 
 class PPOEvaluator:
-    def __init__(self, config_filename="ppo.yaml"):
+    def __init__(self, config_filename):
         self.config = yaml2variant(config_filename=config_filename)
         self.env_id = self.config.get("env_id")
 
@@ -95,5 +95,5 @@ class PPOEvaluator:
             
 
 if __name__ == "__main__": 
-    ppo_evaluator = PPOEvaluator()
+    ppo_evaluator = PPOEvaluator(config_filename="ppo-fetch-pick-place.yaml")
     ppo_evaluator.eval()
