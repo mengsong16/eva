@@ -71,7 +71,6 @@ class EvalCallback(EventCallback):
         self.evaluations_length = []
         # For computing success rate
         self._is_success_buffer = []
-        #self.evaluations_successes = []
 
     def _init_callback(self) -> None:
         # Does not work in some corner cases, where the wrapper is not the same
@@ -127,11 +126,7 @@ class EvalCallback(EventCallback):
                 warn=self.warn,
                 callback=self._log_success_callback,
             )
-
-            # append success buffer with the success results of n_eval_episodes
-            # if len(self._is_success_buffer) > 0:
-            #     self.evaluations_successes.extend(self._is_success_buffer)
-                   
+       
             mean_reward, std_reward = np.mean(episode_rewards), np.std(episode_rewards)
             mean_ep_length, std_ep_length = np.mean(episode_lengths), np.std(episode_lengths)
             
@@ -183,6 +178,7 @@ class PPOTrainer:
 
         self.goal_format = self.config.get("goal_format")
         assert self.goal_format in ["absolute", "relative"], "Error: undefined goal format: %s"%(self.goal_format)
+        print("=====> goal format: %s"%(self.goal_format))
 
         self.device = torch.device('cuda:%d'%(self.config.get("gpu_id")))
 

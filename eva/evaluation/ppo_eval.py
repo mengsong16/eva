@@ -29,7 +29,7 @@ class PPOEvaluator:
 
         self.goal_format = self.config.get("goal_format")
         assert self.goal_format in ["absolute", "relative"], "Error: undefined goal format: %s"%(self.goal_format)
-
+        print("=====> goal format: %s"%(self.goal_format))
 
         # get seed
         self.seed = self.config.get("seed")

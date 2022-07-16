@@ -109,7 +109,7 @@ class MazeEnv(BaseMazeEnv):
         if self._is_success(achieved_goal=self.maze.objects.agent.positions[0], desired_goal=self.maze.objects.goal.positions[0]):
             reward = self.reward_for_achieving_goal
             done = True
-            success = False
+            success = True
         else:
             reward = self.step_reward_for_not_achieving_goal
             if self.step_count >= self.max_episode_steps:
