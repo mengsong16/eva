@@ -83,7 +83,7 @@ class PPOEvaluator:
 
         mean_reward, std_reward = np.mean(episode_rewards), np.std(episode_rewards)
         mean_ep_length, std_ep_length = np.mean(episode_lengths), np.std(episode_lengths)
-        success_rate = np.mean(self._is_success_buffer)
+        success_rate = np.mean(np.array(self._is_success_buffer))
 
         if verbose:
             print("==========================================")

@@ -43,7 +43,7 @@ class MazeEnv(BaseMazeEnv):
         
         self.action_space = Discrete(len(self.motions))
 
-        self.reward_for_achieving_goal = 0.0
+        self.reward_for_achieving_goal = 0.0 #0.0
         self.step_reward_for_not_achieving_goal = -1.0
 
         self.max_episode_steps = max_episode_steps
@@ -175,7 +175,7 @@ class MazeEnv(BaseMazeEnv):
 
         return action_mask
 
-    # state: [h,w], return np array   
+    # state: [h,w]([row, col]), return np array   
     def get_observation(self): 
         return np.array(self.maze.objects.agent.positions[0])   
 

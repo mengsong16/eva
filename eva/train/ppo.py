@@ -71,7 +71,7 @@ class EvalCallback(EventCallback):
         self.evaluations_length = []
         # For computing success rate
         self._is_success_buffer = []
-        self.evaluations_successes = []
+        #self.evaluations_successes = []
 
     def _init_callback(self) -> None:
         # Does not work in some corner cases, where the wrapper is not the same
@@ -92,6 +92,7 @@ class EvalCallback(EventCallback):
 
         if locals_["done"]:
             maybe_is_success = float(info.get("is_success"))
+            
             if maybe_is_success is not None:
                 self._is_success_buffer.append(maybe_is_success)
 
@@ -128,13 +129,15 @@ class EvalCallback(EventCallback):
             )
 
             # append success buffer with the success results of n_eval_episodes
-            if len(self._is_success_buffer) > 0:
-                self.evaluations_successes.append(self._is_success_buffer)
+            # if len(self._is_success_buffer) > 0:
+            #     self.evaluations_successes.extend(self._is_success_buffer)
                    
-
             mean_reward, std_reward = np.mean(episode_rewards), np.std(episode_rewards)
             mean_ep_length, std_ep_length = np.mean(episode_lengths), np.std(episode_lengths)
             
+            #print("=================================")
+            #print(episode_rewards)
+
             if self.verbose > 0:
                 print(f"Eval num_timesteps={self.num_timesteps}, " f"episode_reward={mean_reward:.2f} +/- {std_reward:.2f}")
                 print(f"Episode length: {mean_ep_length:.2f} +/- {std_ep_length:.2f}")
@@ -145,7 +148,7 @@ class EvalCallback(EventCallback):
 
             # Add success rate of n_eval_episodes to current Logger
             if len(self._is_success_buffer) > 0:
-                success_rate = np.mean(self._is_success_buffer)
+                success_rate = np.mean(np.array(self._is_success_buffer))
                 if self.verbose > 0:
                     print(f"Success rate: {100 * success_rate:.2f}%")
                 self.logger.record("eval/success_rate", success_rate)
@@ -221,7 +224,7 @@ class PPOTrainer:
         # make_vec_env return wrapped envs
         env_vec = make_vec_env(env_id=self.env_id, 
                 n_envs=int(self.config.get("n_envs")), seed=self.seed,
-                wrapper_class=get_wrapper_class(self.env))
+                wrapper_class=get_wrapper_class(self.eval_env))
 
         # create policy
         tensorboard_folder = os.path.join(tensorboard_path, self.exp_prefix)
@@ -244,7 +247,9 @@ class PPOTrainer:
                 tensorboard_log=tensorboard_folder)
 
         # Use deterministic actions for evaluation
-        eval_callback = EvalCallback(eval_env=self.eval_env, eval_freq=100,
+        eval_callback = EvalCallback(eval_env=self.eval_env,
+                                    n_eval_episodes=10, 
+                                    eval_freq=100, 
                                     deterministic=False, render=False)
 
         # train
