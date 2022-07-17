@@ -262,6 +262,6 @@ class PPOTrainer:
     
 
 if __name__ == "__main__": 
-    ppo_trainer = PPOTrainer(config_filename="ppo-fetch-pick-place.yaml")
+    ppo_trainer = PPOTrainer(config_filename="ppo-replica.yaml")
     ppo_trainer.train()
     

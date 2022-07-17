@@ -248,7 +248,10 @@ class MazeEnv(BaseMazeEnv):
     # start and goal are np arrays [row, col]    
     def shortest_path_s_g(self, start, goal):
         actions = dijkstra_solver(self.impassable_array, self.motions, start, goal)
-        return actions, len(actions)
+        if actions is not None:
+            return actions, len(actions)
+        else:
+            return [], 0
          
     # return np array    
     def get_start(self):
@@ -270,6 +273,11 @@ class EmptyMazeEnv(MazeEnv):
 class UMazeEnv(MazeEnv):
     def __init__(self, start=(1,10), goal=(7,10), random_goal=True, random_start=True, max_episode_steps=200):
         super(UMazeEnv, self).__init__(env_id="umaze-v0", start=start, goal=goal, random_goal=random_goal, random_start=random_start, max_episode_steps=max_episode_steps)   
+
+class SimRoomEnv(MazeEnv):
+    def __init__(self, start=(1,10), goal=(7,10), random_goal=True, random_start=True, max_episode_steps=500):
+        #super(SimRoomEnv, self).__init__(env_id="replica-room0", start=start, goal=goal, random_goal=random_goal, random_start=random_start, max_episode_steps=max_episode_steps)  
+        super(SimRoomEnv, self).__init__(env_id="replica-apt1", start=start, goal=goal, random_goal=random_goal, random_start=random_start, max_episode_steps=max_episode_steps)    
 
 class FourRoomEnv(MazeEnv):
     def __init__(self, start=(1,1), goal=(17,17), random_goal=True, random_start=True, max_episode_steps=200):
@@ -366,7 +374,8 @@ class FourRoomEnv(MazeEnv):
 
 
 if __name__ == "__main__":
-    env = EmptyMazeEnv(start=(1,10), goal=(7,10), random_start=False, random_goal=False) 
+    env = SimRoomEnv(start=(8,10), goal=(-1,-1), random_start=True, random_goal=True) 
+    #env = EmptyMazeEnv(start=(1,10), goal=(7,10), random_start=False, random_goal=False) 
     #env = UMazeEnv(start=(1,1), goal=(6,4), random_start=True, random_goal=True)
     #env = FourRoomEnv(start=(1,1), goal=(6,4), random_start=False, random_goal=False)
     #env_id = "four-room-v0"

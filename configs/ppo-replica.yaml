@@ -1,6 +1,6 @@
 # basic
 algorithm: "PPO"
-env_id: "four-room-v0" #"bitflip-v0" #"umaze-v0"
+env_id: "sim-room-v0" #"bitflip-v0" #"umaze-v0"
 
 
 # seed
@@ -29,10 +29,10 @@ eval_exp_name: "s1-20220716-160329"
   
 # ppo
 gamma: 0.99  # discount factor
-learning_rate: 0.0003
+learning_rate: 0.00025 #0.0003
 n_steps: 2048  # n_envs * n_steps = rollout buffer size
 batch_size: 128 #64  # batch size
-n_epochs: 8 #10  # how many times the steps in rollout buffer are used to update the networks
+n_epochs: 8 #8 #10  # how many times the steps in rollout buffer are used to update the networks
 gae_lambda: 0.95 
 clip_range: 0.2
 ent_coef: 0.0

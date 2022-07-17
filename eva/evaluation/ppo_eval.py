@@ -95,5 +95,5 @@ class PPOEvaluator:
             
 
 if __name__ == "__main__": 
-    ppo_evaluator = PPOEvaluator(config_filename="ppo-fetch-pick-place.yaml")
+    ppo_evaluator = PPOEvaluator(config_filename="ppo-fourroom.yaml")
     ppo_evaluator.eval()
